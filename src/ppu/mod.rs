@@ -124,9 +124,12 @@ impl Ppu {
         
         // Render backdrop color (color 0 of palette 0)
         let c0 = (self.palette[0] as u32) | ((self.palette[1] as u32) << 8);
-        let r = (c0 & 0x1F) << 3;
-        let g = ((c0 >> 5) & 0x1F) << 3;
-        let b = ((c0 >> 10) & 0x1F) << 3;
+        let r0 = c0 & 0x1F;
+        let g0 = (c0 >> 5) & 0x1F;
+        let b0 = (c0 >> 10) & 0x1F;
+        let r = (r0 << 3) | (r0 >> 2);
+        let g = (g0 << 3) | (g0 >> 2);
+        let b = (b0 << 3) | (b0 >> 2);
         let color = 0xFF000000 | (b << 16) | (g << 8) | r;
 
         for i in 0..240 {
@@ -193,9 +196,12 @@ impl Ppu {
                             let color_idx = self.vram[tile_addr as usize] as usize;
                             if color_idx != 0 {
                                 let c = (self.palette[color_idx * 2] as u16) | ((self.palette[color_idx * 2 + 1] as u16) << 8);
-                                let pr = (c & 0x1F) << 3;
-                                let pg = ((c >> 5) & 0x1F) << 3;
-                                let pb = ((c >> 10) & 0x1F) << 3;
+                                let r = c & 0x1F;
+                                let g = (c >> 5) & 0x1F;
+                                let b = (c >> 10) & 0x1F;
+                                let pr = (r << 3) | (r >> 2);
+                                let pg = (g << 3) | (g >> 2);
+                                let pb = (b << 3) | (b >> 2);
                                 framebuffer[start + x] = 0xFF000000 | ((pb as u32) << 16) | ((pg as u32) << 8) | (pr as u32);
                                 line_priorities[x] = bg_prio;
                             }
@@ -208,9 +214,12 @@ impl Ppu {
                             if color_idx != 0 {
                                 let pal_idx = (pal_bank as usize) * 16 + color_idx;
                                 let c = (self.palette[pal_idx * 2] as u16) | ((self.palette[pal_idx * 2 + 1] as u16) << 8);
-                                let pr = (c & 0x1F) << 3;
-                                let pg = ((c >> 5) & 0x1F) << 3;
-                                let pb = ((c >> 10) & 0x1F) << 3;
+                                let r = c & 0x1F;
+                                let g = (c >> 5) & 0x1F;
+                                let b = (c >> 10) & 0x1F;
+                                let pr = (r << 3) | (r >> 2);
+                                let pg = (g << 3) | (g >> 2);
+                                let pb = (b << 3) | (b >> 2);
                                 framebuffer[start + x] = 0xFF000000 | ((pb as u32) << 16) | ((pg as u32) << 8) | (pr as u32);
                                 line_priorities[x] = bg_prio;
                             }

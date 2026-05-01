@@ -1011,7 +1011,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
             }
             self.regs[14] = self.regs[15].wrapping_add((signed_offset << 12) as u32);
         } else {
-            let next_pc = self.regs[15].wrapping_sub(2);
+            let next_pc = self.regs[15];
             self.regs[15] = self.regs[14].wrapping_add((offset << 1) as u32);
             self.regs[14] = next_pc | 1;
             self.reload_pipeline();
