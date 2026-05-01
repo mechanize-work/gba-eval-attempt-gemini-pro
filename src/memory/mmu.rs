@@ -2,6 +2,24 @@ use super::bus::Bus;
 use crate::ppu::Ppu;
 
 
+
+#[derive(Clone, Copy)]
+pub struct Timer {
+    pub reload: u16,
+    pub control: u16,
+    pub counter: u32,
+}
+
+impl Timer {
+    pub fn new() -> Self {
+        Self {
+            reload: 0,
+            control: 0,
+            counter: 0,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct DmaChannel {
     pub sad: u32,
@@ -32,6 +50,7 @@ pub struct Mmu {
     pub sram: Box<[u8; 64 * 1024]>,
     pub ppu: Ppu,
     pub dma: [DmaChannel; 4],
+    pub timers: [Timer; 4],
     pub wait_states: usize,
     pub ie: u16,
     pub i_f: u16,
@@ -105,6 +124,7 @@ pub struct Mmu {
             sram: Box::new([0; 64 * 1024]),
             ppu: Ppu::new(),
             dma: [DmaChannel::new(); 4],
+            timers: [Timer::new(); 4],
             wait_states: 0,
             ie: 0,
             i_f: 0,
@@ -124,7 +144,24 @@ impl Bus for Mmu {
             0x03 => self.iwram[(addr & 0x7FFF) as usize],
             0x04 => {
                 match addr & 0xFFFFFF {
-                    0x200 => self.ie as u8,
+                    
+                    0x100 => self.timers[0].counter as u8,
+                    0x101 => (self.timers[0].counter >> 8) as u8,
+                    0x102 => self.timers[0].control as u8,
+                    0x103 => (self.timers[0].control >> 8) as u8,
+                    0x104 => self.timers[1].counter as u8,
+                    0x105 => (self.timers[1].counter >> 8) as u8,
+                    0x106 => self.timers[1].control as u8,
+                    0x107 => (self.timers[1].control >> 8) as u8,
+                    0x108 => self.timers[2].counter as u8,
+                    0x109 => (self.timers[2].counter >> 8) as u8,
+                    0x10A => self.timers[2].control as u8,
+                    0x10B => (self.timers[2].control >> 8) as u8,
+                    0x10C => self.timers[3].counter as u8,
+                    0x10D => (self.timers[3].counter >> 8) as u8,
+                    0x10E => self.timers[3].control as u8,
+                    0x10F => (self.timers[3].control >> 8) as u8,
+0x200 => self.ie as u8,
                     0x201 => (self.ie >> 8) as u8,
                     0x202 => self.i_f as u8,
                     0x203 => (self.i_f >> 8) as u8,
@@ -174,7 +211,24 @@ impl Bus for Mmu {
             0x03 => self.iwram[(addr & 0x7FFF) as usize] = val,
             0x04 => { if addr != 0x04000208 && addr != 0x04000209 && addr != 0x0400020A && addr != 0x0400020B { println!("IO Write {:08X}={:02X}", addr, val); } println!("IO Write {:08X}={:02X}", addr, val);
                 match addr & 0xFFFFFF {
-                    0x200 => self.ie = (self.ie & 0xFF00) | (val as u16),
+                    
+                    0x100 => { self.timers[0].reload = (self.timers[0].reload & 0xFF00) | (val as u16); self.timers[0].counter = self.timers[0].reload as u32; },
+                    0x101 => { self.timers[0].reload = (self.timers[0].reload & 0x00FF) | ((val as u16) << 8); self.timers[0].counter = self.timers[0].reload as u32; },
+                    0x102 => self.timers[0].control = (self.timers[0].control & 0xFF00) | (val as u16),
+                    0x103 => self.timers[0].control = (self.timers[0].control & 0x00FF) | ((val as u16) << 8),
+                    0x104 => { self.timers[1].reload = (self.timers[1].reload & 0xFF00) | (val as u16); self.timers[1].counter = self.timers[1].reload as u32; },
+                    0x105 => { self.timers[1].reload = (self.timers[1].reload & 0x00FF) | ((val as u16) << 8); self.timers[1].counter = self.timers[1].reload as u32; },
+                    0x106 => self.timers[1].control = (self.timers[1].control & 0xFF00) | (val as u16),
+                    0x107 => self.timers[1].control = (self.timers[1].control & 0x00FF) | ((val as u16) << 8),
+                    0x108 => { self.timers[2].reload = (self.timers[2].reload & 0xFF00) | (val as u16); self.timers[2].counter = self.timers[2].reload as u32; },
+                    0x109 => { self.timers[2].reload = (self.timers[2].reload & 0x00FF) | ((val as u16) << 8); self.timers[2].counter = self.timers[2].reload as u32; },
+                    0x10A => self.timers[2].control = (self.timers[2].control & 0xFF00) | (val as u16),
+                    0x10B => self.timers[2].control = (self.timers[2].control & 0x00FF) | ((val as u16) << 8),
+                    0x10C => { self.timers[3].reload = (self.timers[3].reload & 0xFF00) | (val as u16); self.timers[3].counter = self.timers[3].reload as u32; },
+                    0x10D => { self.timers[3].reload = (self.timers[3].reload & 0x00FF) | ((val as u16) << 8); self.timers[3].counter = self.timers[3].reload as u32; },
+                    0x10E => self.timers[3].control = (self.timers[3].control & 0xFF00) | (val as u16),
+                    0x10F => self.timers[3].control = (self.timers[3].control & 0x00FF) | ((val as u16) << 8),
+0x200 => self.ie = (self.ie & 0xFF00) | (val as u16),
                     0x201 => self.ie = (self.ie & 0x00FF) | ((val as u16) << 8),
                     0x202 => self.i_f &= !(val as u16),
                     0x203 => self.i_f &= !((val as u16) << 8),
