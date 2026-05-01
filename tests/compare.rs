@@ -22,8 +22,8 @@ fn test_compare_frame_60() {
                 let pc = gba_mut().cpu.regs[15];
                 let region = pc >> 24;
 
-                // Track SWI
-                if pc == 0x00000008 {
+                if pc == 0x08 { println!("SWI called!"); }
+                if pc == 0x00000010 {
                     // We just jumped to SWI vector
                     let lr = gba_mut().cpu.regs[14];
                     let t = gba_mut().cpu.spsr & 0x20 != 0;
@@ -36,7 +36,7 @@ fn test_compare_frame_60() {
                         } else {
                             0
                         };
-                        println!("Thumb SWI called: {:02X}", swi_instr & 0xFF);
+                        println!("Thumb SWI called: {:02X} R0={:08X} R1={:08X} R2={:08X}", swi_instr & 0xFF, gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], gba_mut().cpu.regs[2]);
                     } else {
                         // It was an ARM SWI
                         let swi_addr = lr.wrapping_sub(4);
@@ -89,7 +89,7 @@ fn test_compare_frame_60() {
             fb[i*4+2] = ((dummy_fb[i] >> 16) & 0xFF) as u8;
         }
         
-        let mut ref_file = File::open("/tmp/ref/frame_00060.ppm").unwrap();
+        let mut ref_file = File::open("/tmp/ref60/frame_00059.ppm").unwrap();
         let mut ref_data = Vec::new();
         ref_file.read_to_end(&mut ref_data).unwrap();
         

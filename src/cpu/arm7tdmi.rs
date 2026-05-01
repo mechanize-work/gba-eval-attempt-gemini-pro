@@ -1247,6 +1247,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
     }
 
     fn handle_hle_swi(&mut self, swi_num: u32, bus: &mut dyn Bus) -> bool {
+        println!("SWI {:02X} src={:08X} dst={:08X} ctrl={:08X}", swi_num, self.regs[0], self.regs[1], self.regs[2]);
         match swi_num {
             0x0B => { // CpuSet
                 let src = self.regs[0];
