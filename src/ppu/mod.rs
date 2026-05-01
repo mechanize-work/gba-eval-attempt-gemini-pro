@@ -127,9 +127,9 @@ impl Ppu {
         let r0 = c0 & 0x1F;
         let g0 = (c0 >> 5) & 0x1F;
         let b0 = (c0 >> 10) & 0x1F;
-        let r = (r0 << 3) | (r0 >> 2);
-        let g = (g0 << 3) | (g0 >> 2);
-        let b = (b0 << 3) | (b0 >> 2);
+        let r = ((r0 as u32 * 255 + 15) / 31) as u8;
+        let g = ((g0 as u32 * 255 + 15) / 31) as u8;
+        let b = ((b0 as u32 * 255 + 15) / 31) as u8;
         let color = 0xFF000000 | ((b as u32) << 16) | ((g as u32) << 8) | (r as u32);
 
         for i in 0..240 {
@@ -199,9 +199,9 @@ impl Ppu {
                                 let r = c & 0x1F;
                                 let g = (c >> 5) & 0x1F;
                                 let b = (c >> 10) & 0x1F;
-                                let pr = (r << 3) | (r >> 2);
-                                let pg = (g << 3) | (g >> 2);
-                                let pb = (b << 3) | (b >> 2);
+                                let pr = ((r as u32 * 255 + 15) / 31) as u8;
+                                let pg = ((g as u32 * 255 + 15) / 31) as u8;
+                                let pb = ((b as u32 * 255 + 15) / 31) as u8;
                                 framebuffer[start + x] = 0xFF000000 | ((pb as u32) << 16) | ((pg as u32) << 8) | (pr as u32);
                                 line_priorities[x] = bg_prio;
                             }
@@ -217,9 +217,9 @@ impl Ppu {
                                 let r = c & 0x1F;
                                 let g = (c >> 5) & 0x1F;
                                 let b = (c >> 10) & 0x1F;
-                                let pr = (r << 3) | (r >> 2);
-                                let pg = (g << 3) | (g >> 2);
-                                let pb = (b << 3) | (b >> 2);
+                                let pr = ((r as u32 * 255 + 15) / 31) as u8;
+                                let pg = ((g as u32 * 255 + 15) / 31) as u8;
+                                let pb = ((b as u32 * 255 + 15) / 31) as u8;
                                 framebuffer[start + x] = 0xFF000000 | ((pb as u32) << 16) | ((pg as u32) << 8) | (pr as u32);
                                 line_priorities[x] = bg_prio;
                             }
