@@ -19,7 +19,7 @@ fn test_compare_frame_60() {
 
         for i in 0..60 {
             println!("End of frame {}: PC={:08X} r1={:08X}", i, gba_mut().cpu.regs[15], gba_mut().cpu.regs[1]);
-            for _ in 0..280896 {
+            while gba_mut().cpu.cycles < ((i as usize) + 1) * 280896 {
                 
                 let pc = gba_mut().cpu.regs[15];
                 if pc == 0x0800014A { println!("REACHED 0800014A!"); }

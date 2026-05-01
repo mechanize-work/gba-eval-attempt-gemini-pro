@@ -84,7 +84,7 @@ impl Gba {
         self.tick_timers(elapsed);
 
         // PPU timings: 1 line = 1232 cycles (actually 960 active, 272 hblank)
-        while self.cycles >= 1232 {
+        if self.cycles >= 1232 {
             self.cycles -= 1232;
             let current_line = self.mmu.ppu.vcount;
             
