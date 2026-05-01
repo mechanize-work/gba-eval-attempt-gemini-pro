@@ -246,7 +246,7 @@ impl Bus for Mmu {
             0x06 => {
                 let offset = addr & 0x1FFFF;
                 if offset < 96 * 1024 {
-                    self.ppu.vram[offset as usize] = val; println!("VRAM write {:08X}={:02X}", offset, val);
+                    self.ppu.vram[offset as usize] = val; println!("VRAM Write {:08X}={:02X}", offset, val); println!("VRAM write {:08X}={:02X}", offset, val);
                 }
             }
             0x07 => self.ppu.oam[(addr & 0x3FF) as usize] = val,

@@ -24,6 +24,14 @@ impl Gba {
     }
 
     pub fn step(&mut self, framebuffer: &mut [u32; 240 * 160]) {
+        
+        // IRQ logic
+        if self.mmu.ime != 0 {
+            if (self.mmu.ie & self.mmu.i_f) != 0 {
+                self.cpu.trigger_irq(); println!("VBlank IRQ Triggered! IE={:04X} IF={:04X}", self.mmu.ie, self.mmu.i_f);
+            }
+        }
+
         self.cpu.step(&mut self.mmu);
         // Assuming 1 instruction = 1 cycle for now, very inaccurate.
         self.cycles += 4;

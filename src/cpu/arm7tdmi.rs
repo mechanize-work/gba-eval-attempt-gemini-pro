@@ -50,6 +50,29 @@ pub struct Cpu {
 }
 
 impl Cpu {
+    
+    pub fn trigger_irq(&mut self) {
+        if (self.cpsr & 0x80) != 0 {
+            return;
+        }
+
+        let ret_addr = if self.get_t() {
+            self.regs[15]
+        } else {
+            self.regs[15].wrapping_sub(4)
+        };
+
+        let old_cpsr = self.cpsr;
+        self.set_mode(Mode::Irq);
+        self.banked_spsr_irq = old_cpsr;
+        self.cpsr |= 0x80; // Disable IRQs
+        self.set_t(false); // Switch to ARM mode
+
+        self.regs[14] = ret_addr;
+        self.regs[15] = 0x18;
+        self.reload_pipeline();
+    }
+
     pub fn new() -> Self {
         Cpu {
             regs: [0; 16],
@@ -1007,8 +1030,9 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         self.reload_pipeline();
     }
     fn execute_thumb_bl(&mut self, instr: u16, bus: &mut dyn Bus) {
+        if (instr & 0x0800) != 0 { let target = self.regs[14].wrapping_add((((instr & 0x7FF) as i32) << 1) as u32); if target == 0x08000186 { println!("MEMSET CALLED!"); } }
         if self.regs[15] == 0x0800012E { println!("BL prefix! instr={:04X}", instr); }
-        if (instr & 0x0800) != 0 { let target = self.regs[14].wrapping_add((((instr & 0x7FF) as i32) << 1) as u32); println!("BL Target: {:08X}", target); }
+
         let offset = (instr & 0x7FF) as i32;
         if (instr & 0x0800) == 0 {
             let mut signed_offset = offset;
@@ -1253,6 +1277,8 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
     }
 
     fn handle_hle_swi(&mut self, swi_num: u32, bus: &mut dyn Bus) -> bool {
+        println!("SWI called {:02X}", swi_num);
+        println!("SWI {:02X} CALLED", swi_num);
         println!("SWI {:02X} src={:08X} dst={:08X} ctrl={:08X}", swi_num, self.regs[0], self.regs[1], self.regs[2]);
         match swi_num {
             0x0B => { // CpuSet
