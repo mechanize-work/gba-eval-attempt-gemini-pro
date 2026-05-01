@@ -892,6 +892,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
     }
 
     fn execute_thumb_push_pop(&mut self, instr: u16, bus: &mut dyn Bus) {
+        println!("PUSH_POP {:04X} at {:08X} SP_before={:08X}", instr, self.regs[15], self.regs[13]);
         let l_bit = (instr >> 11) & 1 != 0;
         let r_bit = (instr >> 8) & 1 != 0;
         let r_list = instr & 0xFF;
@@ -1132,7 +1133,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
             val
         };
 
-        let base = if rn == 15 { self.regs[15].wrapping_add(4) } else { self.regs[rn] };
+        let base = if rn == 15 { self.regs[15] } else { self.regs[rn] };
         
         let addr = if p_bit {
             if u_bit { base.wrapping_add(offset) } else { base.wrapping_sub(offset) }
@@ -1232,7 +1233,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         }
 
         // Branch target is calculated using PC + 8.
-        self.regs[15] = self.regs[15].wrapping_add(4).wrapping_add((signed_offset << 2) as u32);
+        self.regs[15] = self.regs[15].wrapping_add((signed_offset << 2) as u32);
         self.reload_pipeline();
     }
 
