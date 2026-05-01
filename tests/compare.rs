@@ -57,14 +57,14 @@ fn test_compare_frame_60() {
                     prev_pc_region = region;
                 }
                 
-                if cycle_count > 16853040 - 200 && cycle_count <= 16853040 + 20 {
+                if cycle_count > 16853040 - 15000 && cycle_count <= 16853040 + 20 {
                     let pc = gba_mut().cpu.regs[15];
                     let r0 = gba_mut().cpu.regs[0];
                     let r1 = gba_mut().cpu.regs[1];
                     let r2 = gba_mut().cpu.regs[2];
                     let r3 = gba_mut().cpu.regs[3];
                     let t = gba_mut().cpu.get_t();
-                    println!("Trace: PC={:08X} I={:08X} R0={:08X} R1={:08X} R2={:08X} R3={:08X} SP={:08X}", pc.wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }), 0 /*gba_mut().cpu.pipeline[0]*/, r0, r1, r2, r3, gba_mut().cpu.regs[13]);
+                    
                     
                 }
                 gba_mut().step(&mut dummy_fb); cycle_count += 1;
@@ -89,7 +89,7 @@ fn test_compare_frame_60() {
             fb[i*4+2] = ((dummy_fb[i] >> 16) & 0xFF) as u8;
         }
         
-        let mut ref_file = File::open("/tmp/ref60/frame_00059.ppm").unwrap();
+        let mut ref_file = File::open("/tmp/ref60/frame_00060.ppm").unwrap();
         let mut ref_data = Vec::new();
         ref_file.read_to_end(&mut ref_data).unwrap();
         
