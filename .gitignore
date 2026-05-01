@@ -1,0 +1,21 @@
+target/
+.oracle-out/
+# Build artifacts and trace dumps — agents have written multi-GB
+# trace.log files that OOM-killed the services container during git
+# add. Exclude any large/binary droppings unconditionally.
+*.log
+*.ppm
+*.png
+*.wav
+*.bin
+*.dump
+*.pcap
+frames/
+oracle-out/
+oracle_*/
+/tmp/
+
+
+# Added by cargo
+
+/target
