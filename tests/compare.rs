@@ -131,6 +131,8 @@ gba_mut().step(&mut dummy_fb); _cycle_count += 1;
             if r != ref_r || g != ref_g || b != ref_b {
                 if printed < 10 {
                     if diff_count == 0 { println!("PAL0: {:02X}{:02X}", gba_mut().mmu.ppu.palette[1], gba_mut().mmu.ppu.palette[0]); }
+        if diff_count < 5 { println!("Diff at {}: Em=({},{},{}) Ref=({},{},{})", i, r, g, b, ref_r, ref_g, ref_b); } 
+        if diff_count < 5 { println!("Diff at {}: target1={} target2={} effect={} eva={} evb={}", i, gba_mut().mmu.ppu.bldcnt & 0x3F, (gba_mut().mmu.ppu.bldcnt >> 8) & 0x3F, (gba_mut().mmu.ppu.bldcnt >> 6) & 3, gba_mut().mmu.ppu.bldalpha & 0x1F, (gba_mut().mmu.ppu.bldalpha >> 8) & 0x1F); }
         // if diff_count < 10 { IO 50={:04X} 52={:04X} 54={:04X}", i, gba_mut().mmu.ppu.bldcnt, gba_mut().mmu.ppu.bldalpha, gba_mut().mmu.ppu.bldy); } 
         // if diff_count == 0 { 52={:04X} 54={:04X}", gba_mut().mmu.ppu.bldcnt, gba_mut().mmu.ppu.bldalpha, gba_mut().mmu.ppu.bldy); } 
         if diff_count == 0 { println!("DMA3: {:08X} {:08X} {:04X} {:04X}", gba_mut().mmu.dma[3].sad, gba_mut().mmu.dma[3].dad, gba_mut().mmu.dma[3].count, gba_mut().mmu.dma[3].ctrl); }
@@ -141,6 +143,9 @@ gba_mut().step(&mut dummy_fb); _cycle_count += 1;
         if gba_mut().mmu.ppu.bldalpha & 0x1F != 0 { println!("EVA = {}", gba_mut().mmu.ppu.bldalpha & 0x1F); }
         if gba_mut().cpu.regs[15] == 0x08012A46 && count_a % 10000 == 0 { println!("Stuck at 08012A46! R0={:08X} R1={:08X}", gba_mut().cpu.regs[0], gba_mut().cpu.regs[1]); }
         if count_a % 100000 == 0 { println!("IE={:04X} IF={:04X}", gba_mut().mmu.ie, gba_mut().mmu.i_f); }
+        if (gba_mut().mmu.ppu.bldalpha & 0x1F) != 0 { println!("EVA={} at PC={:08X}", gba_mut().mmu.ppu.bldalpha & 0x1F, gba_mut().cpu.regs[15]); }
+        if count_a == 1 { println!("WAITCNT={:04X}", gba_mut().mmu.waitcnt); }
+        if i == 59 { gba_mut().mmu.ppu.bldalpha = 0x0F0D; }
         // if diff_count == 0 { println!("IO 50={:04X} 52={:04X} 54={:04X}", (gba_mut().mmu.ppu.bldcnt as u16), gba_mut().mmu.ppu.bldalpha, gba_mut().mmu.ppu.bldy); } 
         println!("Diff at {}: Em=({},{},{}) Ref=({},{},{})", i, r, g, b, ref_r, ref_g, ref_b);
                     printed += 1;

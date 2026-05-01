@@ -158,9 +158,9 @@ macro_rules! blend_and_draw {
                 let old_r = old_c & 0xFF;
                 let old_g = (old_c >> 8) & 0xFF;
                 let old_b = (old_c >> 16) & 0xFF;
-                final_r = ((final_r * eva + old_r * evb) / 16).min(255);
-                final_g = ((final_g * eva + old_g * evb) / 16).min(255);
-                final_b = ((final_b * eva + old_b * evb) / 16).min(255);
+                final_r = ((((final_r >> 3) * eva + (old_r >> 3) * evb) / 16).min(31) << 3) | ((((final_r >> 3) * eva + (old_r >> 3) * evb) / 16).min(31) >> 2);
+                final_g = ((((final_g >> 3) * eva + (old_g >> 3) * evb) / 16).min(31) << 3) | ((((final_g >> 3) * eva + (old_g >> 3) * evb) / 16).min(31) >> 2);
+                final_b = ((((final_b >> 3) * eva + (old_b >> 3) * evb) / 16).min(31) << 3) | ((((final_b >> 3) * eva + (old_b >> 3) * evb) / 16).min(31) >> 2);
             } else if effect == 2 {
                 final_r = final_r + ((255 - final_r) * evy / 16);
                 final_g = final_g + ((255 - final_g) * evy / 16);

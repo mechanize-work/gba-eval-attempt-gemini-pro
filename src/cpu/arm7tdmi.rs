@@ -80,6 +80,20 @@ impl Cpu {
         Mode::from_bits(self.cpsr)
     }
 
+    pub fn get_memory_cycles_32(&self, addr: u32) -> usize {
+        match addr >> 24 {
+            0x02 => 3, // EWRAM
+            0x03 => 1, // IWRAM
+            0x04 => 1, // I/O
+            0x05 => 1, // PAL
+            0x06 => 1, // VRAM
+            0x07 => 1, // OAM
+            0x08 | 0x09 | 0x0A | 0x0B | 0x0C | 0x0D => 4, // ROM
+            0x0E => 5, // SRAM
+            _ => 1,
+        }
+    }
+
     pub fn set_mode(&mut self, new_mode: Mode) {
         let old_mode = self.get_mode();
         if old_mode == new_mode {
@@ -303,7 +317,7 @@ impl Cpu {
         let pc = self.regs[15].wrapping_sub(if self.get_t() { 2 } else { 4 });
         let cycles = match pc >> 24 {
             0x02 => if self.get_t() { 3 } else { 6 },
-            0x08 | 0x09 | 0x0A | 0x0B | 0x0C | 0x0D => if self.get_t() { 3 } else { 6 },
+            0x08 | 0x09 | 0x0A | 0x0B | 0x0C | 0x0D => if self.get_t() { 1 } else { 2 }, // Prefetch buffer speeds this up significantly
             0x0E => 5,
             _ => 1,
         };
@@ -916,6 +930,8 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
 
         if l_bit { // POP
             let mut addr = self.regs[13];
+            let num_regs = r_list.count_ones() + if r_bit { 1 } else { 0 };
+            self.cycles += self.get_memory_cycles_32(addr) * (num_regs as usize);
             for i in 0..8 {
                 if (r_list & (1 << i)) != 0 {
                     self.regs[i] = bus.read32(addr);
@@ -932,6 +948,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
             self.regs[13] = addr;
         } else { // PUSH
             let num_regs = r_list.count_ones() + if r_bit { 1 } else { 0 };
+            self.cycles += self.get_memory_cycles_32(self.regs[13]) * (num_regs as usize);
             let mut addr = self.regs[13].wrapping_sub(num_regs * 4);
             self.regs[13] = addr;
             
@@ -953,7 +970,8 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         let r_list = instr & 0xFF;
 
         let mut addr = self.regs[rb];
-
+        let num_regs = if r_list == 0 { 0 } else { r_list.count_ones() };
+        self.cycles += self.get_memory_cycles_32(addr) * (num_regs as usize);
         for i in 0..8 {
             if (r_list & (1 << i)) != 0 {
                 if l_bit {
@@ -1195,6 +1213,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
 
         let mut addr = self.regs[rn];
         let num_regs = reg_list.count_ones();
+        self.cycles += self.get_memory_cycles_32(addr) * (num_regs as usize);
         
         let start_addr = if u_bit {
             if p_bit { addr.wrapping_add(4) } else { addr }
@@ -1272,6 +1291,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
                 let count = ctrl & 0x1FFFFF;
                 let fixed = (ctrl & 0x01000000) != 0;
                 let is_32bit = (ctrl & 0x04000000) != 0;
+                self.cycles += (count as usize) * (self.get_memory_cycles_32(src) + self.get_memory_cycles_32(dst));
 
                 if is_32bit {
                     let mut s = src & !3;
@@ -1300,6 +1320,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
                 let ctrl = self.regs[2];
                 let count = ctrl & 0x1FFFFF;
                 let fixed = (ctrl & 0x01000000) != 0;
+                self.cycles += (count as usize) * (self.get_memory_cycles_32(src) + self.get_memory_cycles_32(dst));
 
                 let mut s = src;
                 for _ in 0..count {

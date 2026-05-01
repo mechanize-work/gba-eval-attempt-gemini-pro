@@ -36,10 +36,10 @@ pub struct Mmu {
     pub ie: u16,
     pub i_f: u16,
     pub ime: u16,
-}
+    pub waitcnt: u16,
+    }
 
-impl Mmu {
-
+    impl Mmu {
     pub fn trigger_dma(&mut self, channel: usize) {
         println!("DMA {} triggered! SAD={:08X} DAD={:08X} count={}", channel, self.dma[channel].sad, self.dma[channel].dad, self.dma[channel].count);
         let sad = self.dma[channel].sad;
@@ -109,6 +109,7 @@ impl Mmu {
             ie: 0,
             i_f: 0,
             ime: 0,
+            waitcnt: 0x0000,
         }
     }
 }
@@ -127,6 +128,8 @@ impl Bus for Mmu {
                     0x201 => (self.ie >> 8) as u8,
                     0x202 => self.i_f as u8,
                     0x203 => (self.i_f >> 8) as u8,
+                    0x204 => self.waitcnt as u8,
+                    0x205 => (self.waitcnt >> 8) as u8,
                     0x208 => self.ime as u8,
                     0x209 => (self.ime >> 8) as u8,
                     _ => self.ppu.read8(addr),
@@ -175,6 +178,8 @@ impl Bus for Mmu {
                     0x201 => self.ie = (self.ie & 0x00FF) | ((val as u16) << 8),
                     0x202 => self.i_f &= !(val as u16),
                     0x203 => self.i_f &= !((val as u16) << 8),
+                    0x204 => self.waitcnt = (self.waitcnt & 0xFF00) | (val as u16),
+                    0x205 => self.waitcnt = (self.waitcnt & 0x00FF) | ((val as u16) << 8),
                     0x208 => self.ime = (self.ime & 0xFF00) | (val as u16),
                     0x209 => self.ime = (self.ime & 0x00FF) | ((val as u16) << 8),
 
