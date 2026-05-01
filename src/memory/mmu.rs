@@ -52,7 +52,6 @@ impl Mmu {
         
         let timing = (ctrl >> 12) & 3;
         if timing != 0 {
-            println!("DMA {} scheduled for VBlank!", channel);
             return;
         }
 
@@ -173,7 +172,7 @@ impl Bus for Mmu {
                     0x201 => self.ie = (self.ie & 0x00FF) | ((val as u16) << 8),
                     0x202 => self.i_f &= !(val as u16),
                     0x203 => self.i_f &= !((val as u16) << 8),
-                    0x208 => { self.ime = (self.ime & 0xFF00) | (val as u16); if self.ime != 0 { println!("IME ENABLED!"); } },
+                    0x208 => self.ime = (self.ime & 0xFF00) | (val as u16),
                     0x209 => self.ime = (self.ime & 0x00FF) | ((val as u16) << 8),
 
                     0x0B0 => self.dma[0].sad = (self.dma[0].sad & 0xFFFFFF00) | (val as u32),
@@ -247,7 +246,7 @@ impl Bus for Mmu {
             0x06 => {
                 let offset = addr & 0x1FFFF;
                 if offset < 96 * 1024 {
-                    self.ppu.vram[offset as usize] = val; println!("VRAM Write {:08X}={:02X}", offset, val); println!("VRAM write {:08X}={:02X}", offset, val);
+                    self.ppu.vram[offset as usize] = val; println!("VRAM write {:08X}={:02X}", offset, val);
                 }
             }
             0x07 => self.ppu.oam[(addr & 0x3FF) as usize] = val,

@@ -1,33 +1,9 @@
 import sys
 
-with open("src/cpu/arm7tdmi.rs", "r") as f:
+with open("src/sys/gba.rs", "r") as f:
     src = f.read()
 
-irq_code = """
-    pub fn trigger_irq(&mut self) {
-        if (self.cpsr & 0x80) != 0 {
-            return;
-        }
+src = src.replace("self.cpu.regs[14] = self.cpu.regs[15]; // Not wrapping_add 4 since we are currently executing", "self.cpu.regs[14] = if self.cpu.get_t() { self.cpu.regs[15] } else { self.cpu.regs[15].wrapping_sub(4) };")
 
-        let ret_addr = if self.get_t() {
-            self.regs[15]
-        } else {
-            self.regs[15].wrapping_sub(4)
-        };
-
-        let old_cpsr = self.cpsr;
-        self.set_mode(Mode::Irq);
-        self.spsr = old_cpsr;
-        self.cpsr |= 0x80; // Disable IRQs
-        self.set_t(false); // Switch to ARM mode
-
-        self.regs[14] = ret_addr;
-        self.regs[15] = 0x18;
-        self.reload_pipeline();
-    }
-"""
-
-src = src.replace("pub fn reset(&mut self) {", irq_code + "\n    pub fn reset(&mut self) {")
-
-with open("src/cpu/arm7tdmi.rs", "w") as f:
+with open("src/sys/gba.rs", "w") as f:
     f.write(src)

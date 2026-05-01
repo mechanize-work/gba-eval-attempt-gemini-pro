@@ -155,6 +155,7 @@ dma_logic = """
                         if (val & 0x80) != 0 { self.trigger_dma(3); }
                     }
 """
+
 src = src.replace("                    0x209 => self.ime = (self.ime & 0x00FF) | ((val as u16) << 8),", "                    0x209 => self.ime = (self.ime & 0x00FF) | ((val as u16) << 8),\n" + dma_logic)
 
 with open("src/memory/mmu.rs", "w") as f:

@@ -51,7 +51,7 @@ impl Ppu {
             0x04000001 => (self.dispcnt >> 8) as u8,
             0x04000004 => self.dispstat as u8,
             0x04000005 => (self.dispstat >> 8) as u8,
-            0x04000006 => self.vcount as u8,
+            0x04000006 => { println!("VCOUNT READ!"); self.vcount as u8 },
             0x04000007 => (self.vcount >> 8) as u8,
             0x04000008 => self.bg0cnt as u8,
             0x04000009 => (self.bg0cnt >> 8) as u8,

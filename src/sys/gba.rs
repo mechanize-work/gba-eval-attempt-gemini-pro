@@ -24,14 +24,6 @@ impl Gba {
     }
 
     pub fn step(&mut self, framebuffer: &mut [u32; 240 * 160]) {
-        
-        // IRQ logic
-        if self.mmu.ime != 0 {
-            if (self.mmu.ie & self.mmu.i_f) != 0 {
-                self.cpu.trigger_irq(); println!("VBlank IRQ Triggered! IE={:04X} IF={:04X}", self.mmu.ie, self.mmu.i_f);
-            }
-        }
-
         self.cpu.step(&mut self.mmu);
         // Assuming 1 instruction = 1 cycle for now, very inaccurate.
         self.cycles += 1;
@@ -81,7 +73,7 @@ impl Gba {
                 let old_cpsr = self.cpu.cpsr;
                 self.cpu.set_mode(crate::cpu::arm7tdmi::Mode::Irq);
                 self.cpu.spsr = old_cpsr;
-                self.cpu.regs[14] = self.cpu.regs[15]; // Not wrapping_add 4 since we are currently executing
+                self.cpu.regs[14] = if self.cpu.get_t() { self.cpu.regs[15] } else { self.cpu.regs[15].wrapping_sub(4) };
                 self.cpu.set_t(false);
                 self.cpu.set_i(true);
                 self.cpu.regs[15] = 0x00000018;
