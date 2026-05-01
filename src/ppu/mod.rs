@@ -120,6 +120,7 @@ impl Ppu {
         }
 
         let mode = self.dispcnt & 7;
+        let mut line_priorities = [4u8; 240];
         
         // Render backdrop color (color 0 of palette 0)
         let c0 = (self.palette[0] as u32) | ((self.palette[1] as u32) << 8);
@@ -147,6 +148,7 @@ impl Ppu {
                     _ => unreachable!(),
                 };
 
+                let bg_prio = (bgcnt & 3) as u8;
                 let char_base = ((bgcnt >> 2) & 3) as u32 * 16384;
                 let screen_base = ((bgcnt >> 8) & 0x1F) as u32 * 2048;
                 let color_mode_256 = (bgcnt & 0x80) != 0;
@@ -161,6 +163,7 @@ impl Ppu {
                 let tile_y = y % 8;
 
                 for x in 0..240 {
+                    if bg_prio >= line_priorities[x] { continue; }
                     let rx = (x as u32 + bghofs as u32) % width;
                     let map_x = rx / 8;
                     let tile_x = rx % 8;
@@ -194,6 +197,7 @@ impl Ppu {
                                 let pg = ((c >> 5) & 0x1F) << 3;
                                 let pb = ((c >> 10) & 0x1F) << 3;
                                 framebuffer[start + x] = 0xFF000000 | ((pb as u32) << 16) | ((pg as u32) << 8) | (pr as u32);
+                                line_priorities[x] = bg_prio;
                             }
                         }
                     } else {
@@ -208,6 +212,7 @@ impl Ppu {
                                 let pg = ((c >> 5) & 0x1F) << 3;
                                 let pb = ((c >> 10) & 0x1F) << 3;
                                 framebuffer[start + x] = 0xFF000000 | ((pb as u32) << 16) | ((pg as u32) << 8) | (pr as u32);
+                                line_priorities[x] = bg_prio;
                             }
                         }
                     }
@@ -277,7 +282,7 @@ impl Ppu {
                 let size = (attr1 >> 14) & 3;
 
                 let tile_num = attr2 & 0x3FF;
-                let priority = (attr2 >> 10) & 3;
+                let priority = ((attr2 >> 10) & 3) as u8;
                 let pal_bank = (attr2 >> 12) & 0xF;
 
                 let (width, height) = match (shape, size) {
@@ -309,6 +314,8 @@ impl Ppu {
                     for mut local_x in 0..width {
                         let screen_x = signed_x + local_x;
                         if screen_x >= 0 && screen_x < 240 {
+                            let sx = screen_x as usize;
+                            if priority >= line_priorities[sx] { continue; }
                             let draw_x = if h_flip { width - 1 - local_x } else { local_x };
 
                             let tile_x = draw_x / 8;

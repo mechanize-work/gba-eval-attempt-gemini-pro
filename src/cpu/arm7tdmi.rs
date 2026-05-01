@@ -292,18 +292,16 @@ impl Cpu {
         self.pipeline[0] = self.pipeline[1];
 
         if self.get_t() {
+            // Note: PC is 4 bytes ahead during execution!
+            // Wait, we add 2 to PC *before* execution so that PC read by instruction is PC+4
+            self.pipeline[1] = bus.read16(self.regs[15]) as u32;
+            self.regs[15] = self.regs[15].wrapping_add(2);
             self.execute_thumb(instr as u16, bus);
-            if !self.pipeline_empty {
-                self.pipeline[1] = bus.read16(self.regs[15]) as u32;
-                self.regs[15] = self.regs[15].wrapping_add(2);
-            }
         } else {
+            self.pipeline[1] = bus.read32(self.regs[15]);
+            self.regs[15] = self.regs[15].wrapping_add(4);
             if self.check_cond(instr >> 28) {
                 self.execute_arm(instr, bus);
-            }
-            if !self.pipeline_empty {
-                self.pipeline[1] = bus.read32(self.regs[15]);
-                self.regs[15] = self.regs[15].wrapping_add(4);
             }
         }
     }
@@ -991,15 +989,17 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
     fn execute_thumb_cond_branch(&mut self, instr: u16, bus: &mut dyn Bus) {
         let cond = (instr >> 8) & 0xF;
         let offset = (instr & 0xFF) as i8 as i32;
+        // Thumb branch offsets are based on PC+4, but our PC is currently at PC+2.
+        // So we add 2 to it before computing.
         if self.check_cond(cond as u32) {
-            self.regs[15] = self.regs[15].wrapping_add((offset << 1) as u32);
+            self.regs[15] = self.regs[15].wrapping_add(2).wrapping_add((offset << 1) as u32);
             self.reload_pipeline();
         }
     }
     fn execute_thumb_uncond_branch(&mut self, instr: u16, bus: &mut dyn Bus) {
         let offset = (instr & 0x7FF) as i32;
         let signed_offset = if (offset & 0x400) != 0 { offset | (!0x7FF) } else { offset };
-        self.regs[15] = self.regs[15].wrapping_add((signed_offset << 1) as u32);
+        self.regs[15] = self.regs[15].wrapping_add(2).wrapping_add((signed_offset << 1) as u32);
         self.reload_pipeline();
     }
     fn execute_thumb_bl(&mut self, instr: u16, bus: &mut dyn Bus) {
@@ -1222,7 +1222,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
             self.regs[14] = self.regs[15].wrapping_sub(4);
         }
 
-        self.regs[15] = self.regs[15].wrapping_add(signed_offset << 2);
+        self.regs[15] = self.regs[15].wrapping_add(4).wrapping_add(signed_offset << 2);
         self.reload_pipeline();
     }
 
@@ -1286,6 +1286,14 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
                     if !fixed { s += 4; }
                     dst += 4;
                 }
+                true
+            }
+            0x05 => { // VBlankIntrWait
+                // HLE: just return for now. The game might run too fast, but it won't crash.
+                true
+            }
+            0x04 => { // IntrWait
+                // HLE: just return
                 true
             }
             _ => false,

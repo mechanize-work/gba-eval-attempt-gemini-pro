@@ -60,7 +60,10 @@ fn test_compare_frame_60() {
             if true {
                 let pc = gba_mut().cpu.regs[15];
                 let dispcnt = gba_mut().mmu.ppu.dispcnt;
-                println!("Frame {}: PC: {:08X}, DISPCNT: {:04X}", i, pc, dispcnt);
+                let bg2cnt = gba_mut().mmu.ppu.bg2cnt;
+                let pal0 = gba_mut().mmu.ppu.palette[0];
+                let pal1 = gba_mut().mmu.ppu.palette[1];
+                println!("Frame {}: PC: {:08X}, DISPCNT: {:04X}, BG2CNT: {:04X}, PAL0: {:02X}{:02X}", i, pc, dispcnt, bg2cnt, pal1, pal0);
             }
         }
         
