@@ -19,7 +19,13 @@ fn test_compare_frame_60() {
 
         for i in 0..60 {
             for _ in 0..280896 {
+                
                 let pc = gba_mut().cpu.regs[15];
+                let true_pc = pc.wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 });
+                if true_pc == 0x08000186 {
+                    println!("MEMSET CALLED! R0={:08X} R1={:08X}", gba_mut().cpu.regs[0], gba_mut().cpu.regs[1]);
+                }
+
                 let region = pc >> 24;
 
                 if pc == 0x08 { println!("SWI called!"); }

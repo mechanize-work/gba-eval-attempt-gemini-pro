@@ -915,6 +915,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
     }
 
     fn execute_thumb_push_pop(&mut self, instr: u16, bus: &mut dyn Bus) {
+        if instr == 0xb530 { println!("PUSH r4, r5, LR at {:08X}!", self.regs[15]); }
         println!("PUSH_POP {:04X} at {:08X} SP_before={:08X}", instr, self.regs[15], self.regs[13]);
         let l_bit = (instr >> 11) & 1 != 0;
         let r_bit = (instr >> 8) & 1 != 0;
