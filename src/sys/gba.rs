@@ -68,7 +68,7 @@ impl Gba {
             }
 
             // check if IRQ should be processed
-            if self.mmu.ime != 0 && (self.mmu.ie & self.mmu.i_f) != 0 {
+            if self.mmu.ime != 0 && (self.mmu.ie & self.mmu.i_f) != 0 && (self.cpu.cpsr & 0x80) == 0 {
                 // Trigger IRQ exception
                 let old_cpsr = self.cpu.cpsr;
                 self.cpu.set_mode(crate::cpu::arm7tdmi::Mode::Irq);
