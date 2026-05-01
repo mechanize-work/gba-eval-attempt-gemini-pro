@@ -114,7 +114,7 @@ impl Ppu {
         
         if forced_blank {
             for i in 0..240 {
-                framebuffer[start + i] = 0xFFFFFFFF; // White
+                framebuffer[start + i] = 0xFF000000; // Black
             }
             return;
         }
