@@ -58,14 +58,43 @@ src = src.replace("""    fn execute_thumb_bl(&mut self, instr: u16, bus: &mut dy
             }
             self.regs[14] = self.regs[15].wrapping_add(2).wrapping_add((signed_offset << 12) as u32);
         } else {
-            // Here, next_pc should be the instruction AFTER the suffix.
-            // regs[15] is PC + 2. The instruction after the suffix is PC + 2.
             let next_pc = self.regs[15] | 1;
             self.regs[15] = self.regs[14].wrapping_add((offset << 1) as u32);
             self.regs[14] = next_pc;
             self.reload_pipeline();
         }
     }""")
+
+# Fix execute_thumb_pc_load
+src = src.replace("""    fn execute_thumb_pc_load(&mut self, instr: u16, bus: &mut dyn Bus) {
+        let rd = ((instr >> 8) & 0x7) as usize;
+        let imm = ((instr & 0xFF) as u32) << 2;
+        let addr = (self.regs[15] & !2).wrapping_add(imm);
+        self.regs[rd] = bus.read32(addr);
+    }""", """    fn execute_thumb_pc_load(&mut self, instr: u16, bus: &mut dyn Bus) {
+        let rd = ((instr >> 8) & 0x7) as usize;
+        let imm = ((instr & 0xFF) as u32) << 2;
+        let addr = (self.regs[15].wrapping_add(2) & !2).wrapping_add(imm);
+        self.regs[rd] = bus.read32(addr);
+    }""")
+
+# Fix execute_thumb_load_address
+src = src.replace("""            self.regs[rd] = (self.regs[15] & !2).wrapping_add(imm);""", """            self.regs[rd] = (self.regs[15].wrapping_add(2) & !2).wrapping_add(imm);""")
+
+# Fix execute_arm_branch
+src = src.replace("""        if l_bit {
+            self.regs[14] = self.regs[15].wrapping_sub(4);
+        }
+
+        self.regs[15] = self.regs[15].wrapping_add((signed_offset << 2) as u32);""", """        if l_bit {
+            self.regs[14] = self.regs[15];
+        }
+
+        self.regs[15] = self.regs[15].wrapping_add(4).wrapping_add((signed_offset << 2) as u32);""")
+
+# Fix execute_arm_load_store
+src = src.replace("let base = if rn == 15 { self.regs[15] } else { self.regs[rn] };", "let base = if rn == 15 { self.regs[15].wrapping_add(4) } else { self.regs[rn] };")
+src = src.replace("let base_val = if rn == 15 { self.regs[15] } else { self.regs[rn] };", "let base_val = if rn == 15 { self.regs[15].wrapping_add(4) } else { self.regs[rn] };")
 
 with open("src/cpu/arm7tdmi.rs", "w") as f:
     f.write(src)
