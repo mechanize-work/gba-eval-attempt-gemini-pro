@@ -18,7 +18,7 @@ fn test_compare_frame_60() {
         let mut prev_pc_region = 0;
 
         for i in 0..60 {
-            println!("End of frame {}: PC={:08X}", i, gba_mut().cpu.regs[15]);
+            println!("End of frame {}: PC={:08X} EVA={}", i, gba_mut().cpu.regs[15], gba_mut().mmu.ppu.bldalpha & 0x1F);
             for _ in 0..280896 {
                 
                 let pc = gba_mut().cpu.regs[15];

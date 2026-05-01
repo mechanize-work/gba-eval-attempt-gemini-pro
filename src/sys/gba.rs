@@ -83,7 +83,7 @@ impl Gba {
         self.tick_timers(elapsed);
 
         // PPU timings: 1 line = 1232 cycles (actually 960 active, 272 hblank)
-        if self.cycles >= 1232 {
+        while self.cycles >= 1232 {
             self.cycles -= 1232;
             let current_line = self.mmu.ppu.vcount;
             
@@ -122,6 +122,9 @@ impl Gba {
             }
 
             // check if IRQ should be processed
+            if (self.mmu.ie & self.mmu.i_f) != 0 {
+                self.cpu.halted = false;
+            }
             if self.mmu.ime != 0 && (self.mmu.ie & self.mmu.i_f) != 0 {
                 self.cpu.halted = false;
                 if (self.cpu.cpsr & 0x80) == 0 {
@@ -129,7 +132,7 @@ impl Gba {
                     let old_cpsr = self.cpu.cpsr;
                     self.cpu.set_mode(crate::cpu::arm7tdmi::Mode::Irq);
                     self.cpu.spsr = old_cpsr;
-                    self.cpu.regs[14] = if self.cpu.pipeline_empty {
+                    self.cpu.regs[14] = if self.cpu.halted { self.cpu.regs[15].wrapping_sub(if self.cpu.get_t() { 2 } else { 4 }) } else if self.cpu.pipeline_empty {
                         self.cpu.regs[15].wrapping_add(4)
                     } else {
                         self.cpu.regs[15]
