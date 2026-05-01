@@ -47,6 +47,7 @@ pub struct Cpu {
 
     pipeline: [u32; 2],
     pub pipeline_empty: bool,
+    pub cycles: usize,
 }
 
 impl Cpu {
@@ -69,6 +70,7 @@ impl Cpu {
             banked_spsr_und: 0,
             pipeline: [0; 2],
             pipeline_empty: true,
+            cycles: 0,
         }
     }
 
@@ -290,6 +292,9 @@ impl Cpu {
 
         let instr = self.pipeline[0];
         self.pipeline[0] = self.pipeline[1];
+
+        // For now, let's just add 1 cycle per instruction. We can improve this later.
+        self.cycles += 1;
 
         if self.get_t() {
             self.execute_thumb(instr as u16, bus);
