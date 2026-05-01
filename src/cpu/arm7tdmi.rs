@@ -1002,7 +1002,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         self.reload_pipeline();
     }
     fn execute_thumb_bl(&mut self, instr: u16, bus: &mut dyn Bus) {
-        if (instr & 0x0800) != 0 { let target = self.regs[14].wrapping_add((((instr & 0x7FF) as i32) << 1) as u32); println!("BL Target: {:08X}", target); }
+        if (instr & 0x0800) != 0 { let target = self.regs[14].wrapping_add((((instr & 0x7FF) as i32) << 1) as u32); println!("BL Target: {:08X} from {:08X}", target, self.regs[15]); }
         let offset = (instr & 0x7FF) as i32;
         if (instr & 0x0800) == 0 {
             let mut signed_offset = offset;

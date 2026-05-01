@@ -22,6 +22,9 @@ fn test_compare_frame_60() {
             for _ in 0..280896 {
                 
                 let pc = gba_mut().cpu.regs[15];
+                if _cycle_count > 204000 && _cycle_count < 205000 { println!("Trace: PC={:08X} R1={:08X} LR={:08X}", pc.wrapping_sub(2), gba_mut().cpu.regs[1], gba_mut().cpu.regs[14]); }
+                if pc == 0x0800014A { println!("REACHED 0800014A!"); }
+                if pc == 0x08000154 { println!("REACHED 08000154!"); }
                 if pc == 0x08000196 && gba_mut().cpu.regs[1] == 0 { println!("R1 IS 0! Z={}", gba_mut().cpu.get_z()); }
                 if pc == 0x08000196 { println!("AT 08000196 LR={:08X} R0={:08X} R1={:08X} cycles={}", gba_mut().cpu.regs[14], gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], _cycle_count); }
                 let true_pc = pc.wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 });
@@ -78,6 +81,9 @@ gba_mut().step(&mut dummy_fb); _cycle_count += 1;
             }
             if true {
                 let pc = gba_mut().cpu.regs[15];
+                if _cycle_count > 204000 && _cycle_count < 205000 { println!("Trace: PC={:08X} R1={:08X} LR={:08X}", pc.wrapping_sub(2), gba_mut().cpu.regs[1], gba_mut().cpu.regs[14]); }
+                if pc == 0x0800014A { println!("REACHED 0800014A!"); }
+                if pc == 0x08000154 { println!("REACHED 08000154!"); }
                 if pc == 0x08000196 && gba_mut().cpu.regs[1] == 0 { println!("R1 IS 0! Z={}", gba_mut().cpu.get_z()); }
                 if pc == 0x08000196 { println!("AT 08000196 LR={:08X} R0={:08X} R1={:08X} cycles={}", gba_mut().cpu.regs[14], gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], _cycle_count); }
                 let dispcnt = gba_mut().mmu.ppu.dispcnt;
