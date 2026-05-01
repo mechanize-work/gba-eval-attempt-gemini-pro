@@ -782,7 +782,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
     fn execute_thumb_pc_load(&mut self, instr: u16, bus: &mut dyn Bus) {
         let rd = ((instr >> 8) & 0x7) as usize;
         let imm = ((instr & 0xFF) as u32) << 2;
-        let addr = (self.regs[15].wrapping_add(2) & !2).wrapping_add(imm);
+        let addr = (self.regs[15] & !3).wrapping_add(imm);
         self.regs[rd] = bus.read32(addr);
     }
 
@@ -876,7 +876,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         if sp_bit {
             self.regs[rd] = self.regs[13].wrapping_add(imm);
         } else {
-            self.regs[rd] = (self.regs[15].wrapping_add(2) & !2).wrapping_add(imm);
+            self.regs[rd] = (self.regs[15] & !3).wrapping_add(imm);
         }
     }
 
@@ -996,14 +996,14 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         let offset = (instr & 0xFF) as i8 as i32;
         if self.check_cond(cond as u32) {
             // regs[15] is currently PC + 2. Branch expects PC + 4.
-            self.regs[15] = self.regs[15].wrapping_add(2).wrapping_add((offset << 1) as u32);
+            self.regs[15] = self.regs[15].wrapping_add((offset << 1) as u32);
             self.reload_pipeline();
         }
     }
     fn execute_thumb_uncond_branch(&mut self, instr: u16, bus: &mut dyn Bus) {
         let offset = (instr & 0x7FF) as i32;
         let signed_offset = if (offset & 0x400) != 0 { offset | (!0x7FF) } else { offset };
-        self.regs[15] = self.regs[15].wrapping_add(2).wrapping_add((signed_offset << 1) as u32);
+        self.regs[15] = self.regs[15].wrapping_add((signed_offset << 1) as u32);
         self.reload_pipeline();
     }
     fn execute_thumb_bl(&mut self, instr: u16, bus: &mut dyn Bus) {
@@ -1133,7 +1133,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
             val
         };
 
-        let base = if rn == 15 { self.regs[15].wrapping_add(4) } else { self.regs[rn] };
+        let base = if rn == 15 { self.regs[15] } else { self.regs[rn] };
         
         let addr = if p_bit {
             if u_bit { base.wrapping_add(offset) } else { base.wrapping_sub(offset) }
@@ -1229,7 +1229,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
 
         if l_bit {
             // regs[15] is PC + 4. LR should be PC + 4 (instruction after branch).
-            self.regs[14] = self.regs[15];
+            self.regs[14] = self.regs[15].wrapping_sub(4);
         }
 
         // Branch target is calculated using PC + 8.
