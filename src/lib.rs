@@ -34,7 +34,12 @@ pub extern "C" fn emu_rom_buffer() -> *mut u8 {
 }
 
 #[no_mangle]
-pub extern "C" fn emu_load_rom(_len: i32) -> i32 {
+pub extern "C" fn emu_load_rom(len: i32) -> i32 {
+    unsafe {
+        let ptr = emu_rom_buffer();
+        let buf = std::slice::from_raw_parts(ptr, len as usize);
+        gba_mut().mmu.rom = buf.to_vec();
+    }
     emu_reset();
     1
 }
