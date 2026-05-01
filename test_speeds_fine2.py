@@ -18,6 +18,6 @@ def test_speed(cycles_vblank):
     diff = m.group(1) if m else "ERROR"
     print(f"VBLANK={cycles_vblank}: Diffs={diff}")
 
-for cycles in [1232, 1000, 800, 500, 1500, 2000, 280896]:
+for cycles in [50, 100, 200, 400]:
     test_speed(cycles)
 
