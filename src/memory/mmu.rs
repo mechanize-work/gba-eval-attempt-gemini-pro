@@ -145,7 +145,7 @@ impl Bus for Mmu {
             0x04 => {
                 match addr & 0xFFFFFF {
                     
-                    0x100 => (self.timers[0].counter >> 16) as u8,
+                    0x100 => { println!("TIMER 0 READ"); (self.timers[0].counter >> 16) as u8 },
                     0x101 => (self.timers[0].counter >> 24) as u8,
                     0x102 => self.timers[0].control as u8,
                     0x103 => (self.timers[0].control >> 8) as u8,
@@ -230,7 +230,7 @@ impl Bus for Mmu {
                     0x10F => self.timers[3].control = (self.timers[3].control & 0x00FF) | ((val as u16) << 8),
 0x200 => self.ie = (self.ie & 0xFF00) | (val as u16),
                     0x201 => self.ie = (self.ie & 0x00FF) | ((val as u16) << 8),
-                    0x202 => self.i_f &= !(val as u16),
+                    0x202 => { println!("IF CLEARED: {:04X}", val); self.i_f &= !(val as u16); },
                     0x203 => self.i_f &= !((val as u16) << 8),
                     0x204 => self.waitcnt = (self.waitcnt & 0xFF00) | (val as u16),
                     0x205 => self.waitcnt = (self.waitcnt & 0x00FF) | ((val as u16) << 8),

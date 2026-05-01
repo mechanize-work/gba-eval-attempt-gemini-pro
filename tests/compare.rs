@@ -152,6 +152,7 @@ gba_mut().step(&mut dummy_fb); _cycle_count += 1;
         if count_a == 1 { println!("WAITCNT={:04X}", gba_mut().mmu.waitcnt); }
         if count_a % 100000 == 0 { println!("Frame {} PC={:08X} count_a={}", i, gba_mut().cpu.regs[15], count_a); }
         if _cycle_count % 1000000 == 0 { println!("PC={:08X} count={}", gba_mut().cpu.regs[15], _cycle_count); }
+        if count_a == 1 { println!("CPSR I-BIT={}", (gba_mut().cpu.cpsr >> 7) & 1); }
         // if diff_count == 0 { println!("IO 50={:04X} 52={:04X} 54={:04X}", (gba_mut().mmu.ppu.bldcnt as u16), gba_mut().mmu.ppu.bldalpha, gba_mut().mmu.ppu.bldy); } 
         println!("Diff at {}: Em=({},{},{}) Ref=({},{},{})", i, r, g, b, ref_r, ref_g, ref_b);
                     printed += 1;
@@ -184,6 +185,7 @@ gba_mut().step(&mut dummy_fb); _cycle_count += 1;
         for i in 0..512 { let c = (p[i*2] as u16) | ((p[i*2+1] as u16) << 8); let r=c&31; let g=(c>>5)&31; let b=(c>>10)&31; if r==2 && g==4 && b==3 { println!("Found (2,4,3) at index {}", i); } }
         for i in 0..512 { let c = (p[i*2] as u16) | ((p[i*2+1] as u16) << 8); if c == 0x0421 { println!("Found 0x0421 at index {}", i); } }
         println!("Palette starts with: {:02X}{:02X} {:02X}{:02X} {:02X}{:02X} {:02X}{:02X}", p[1], p[0], p[3], p[2], p[5], p[4], p[7], p[6]);
+        println!("CPSR={:08X} IE={:04X} IF={:04X} IME={:04X}", gba_mut().cpu.cpsr, gba_mut().mmu.ie, gba_mut().mmu.i_f, gba_mut().mmu.ime);
         println!("Frame 1 differences: {} pixels out of 38400", diff_count);
         assert_eq!(diff_count, 0, "Frames do not match!");
     }
