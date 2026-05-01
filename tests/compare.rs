@@ -65,7 +65,7 @@ fn test_compare_frame_60() {
                     let r2 = gba_mut().cpu.regs[2];
                     let r3 = gba_mut().cpu.regs[3];
                     let t = gba_mut().cpu.get_t();
-                    println!("Trace: PC={:08X} T={} R0={:08X} R1={:08X} R2={:08X} R3={:08X} SP={:08X} LR={:08X}", pc, t, r0, r1, gba_mut().cpu.regs[2], gba_mut().cpu.regs[3], gba_mut().cpu.regs[13], gba_mut().cpu.regs[14]);
+                    println!("Trace: PC={:08X} T={} Z={} R0={:08X} R1={:08X} R2={:08X} R3={:08X} SP={:08X} LR={:08X}", pc, t, gba_mut().cpu.get_z(), r0, r1, r2, r3, gba_mut().cpu.regs[13], gba_mut().cpu.regs[14]);
                     count += 1;
                 }
                 gba_mut().step(&mut dummy_fb);
