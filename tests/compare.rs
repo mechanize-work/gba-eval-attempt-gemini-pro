@@ -155,6 +155,7 @@ gba_mut().step(&mut dummy_fb); _cycle_count += 1;
         if _cycle_count % 1000000 == 0 { println!("PC={:08X} count={}", gba_mut().cpu.regs[15], _cycle_count); }
         if count_a == 1 { println!("CPSR I-BIT={}", (gba_mut().cpu.cpsr >> 7) & 1); }
         if count_a % 10000 == 0 { println!("PC={:08X} IME={}", gba_mut().cpu.regs[15], gba_mut().mmu.ime); }
+        if (gba_mut().mmu.ppu.bldalpha & 0x1F) > 0 { println!("EVA={} at frame {}", gba_mut().mmu.ppu.bldalpha & 0x1F, i); }
         // if diff_count == 0 { println!("IO 50={:04X} 52={:04X} 54={:04X}", (gba_mut().mmu.ppu.bldcnt as u16), gba_mut().mmu.ppu.bldalpha, gba_mut().mmu.ppu.bldy); } 
         println!("Diff at {}: Em=({},{},{}) Ref=({},{},{})", i, r, g, b, ref_r, ref_g, ref_b);
                     printed += 1;

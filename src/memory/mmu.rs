@@ -157,7 +157,7 @@ impl Bus for Mmu {
                     0x109 => (self.timers[2].counter >> 24) as u8,
                     0x10A => self.timers[2].control as u8,
                     0x10B => (self.timers[2].control >> 8) as u8,
-                    0x10C => (self.timers[3].counter >> 16) as u8,
+                    0x10C => { println!("TIMER 3 READ"); (self.timers[3].counter >> 16) as u8 },
                     0x10D => (self.timers[3].counter >> 24) as u8,
                     0x10E => self.timers[3].control as u8,
                     0x10F => (self.timers[3].control >> 8) as u8,
