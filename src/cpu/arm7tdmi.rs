@@ -994,8 +994,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         let cond = (instr >> 8) & 0xF;
         let offset = (instr & 0xFF) as i8 as i32;
         if self.check_cond(cond as u32) {
-            // self.regs[15] is PC + 4 (instruction address + 4)
-            self.regs[15] = self.regs[15].wrapping_add((offset << 1) as u32);
+            self.regs[15] = self.regs[15].wrapping_add(2).wrapping_add((offset << 1) as u32);
             self.reload_pipeline();
         }
     }
