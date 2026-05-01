@@ -62,6 +62,8 @@ fn test_compare_frame_60() {
                     let pc = gba_mut().cpu.regs[15];
                     let r0 = gba_mut().cpu.regs[0];
                     let r1 = gba_mut().cpu.regs[1];
+                    let r2 = gba_mut().cpu.regs[2];
+                    let r3 = gba_mut().cpu.regs[3];
                     let t = gba_mut().cpu.get_t();
                     println!("Trace: PC={:08X} T={} R0={:08X} R1={:08X}", pc, t, r0, r1);
                     count += 1;
@@ -76,7 +78,7 @@ fn test_compare_frame_60() {
                 let pal1 = gba_mut().mmu.ppu.palette[1];
                 let mut nonzero_vram = 0;
                 for b in gba_mut().mmu.ppu.vram.iter() { if *b != 0 { nonzero_vram += 1; } }
-                println!("Frame {}: PC: {:08X}, DISPCNT: {:04X}, BG2CNT: {:04X}, PAL0: {:02X}{:02X}, VRAM non-zero: {}", i, pc, dispcnt, bg2cnt, pal1, pal0, nonzero_vram);
+                if i == 59 { println!("Frame {}: PC: {:08X}, DISPCNT: {:04X}, BG2CNT: {:04X}, PAL0: {:02X}{:02X}, VRAM non-zero: {}", i, pc, dispcnt, bg2cnt, pal1, pal0, nonzero_vram); }
             }
         }
         

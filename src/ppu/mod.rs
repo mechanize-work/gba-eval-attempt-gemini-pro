@@ -350,9 +350,12 @@ impl Ppu {
                                         let color_idx = self.vram[addr as usize] as usize;
                                         if color_idx != 0 {
                                             let c = (self.palette[0x200 + color_idx * 2] as u16) | ((self.palette[0x200 + color_idx * 2 + 1] as u16) << 8);
-                                            let pr = (c & 0x1F) << 3;
-                                            let pg = ((c >> 5) & 0x1F) << 3;
-                                            let pb = ((c >> 10) & 0x1F) << 3;
+                                            let r = c & 0x1F;
+                                            let g = (c >> 5) & 0x1F;
+                                            let b = (c >> 10) & 0x1F;
+                                            let pr = (r << 3) | (r >> 2);
+                                            let pg = (g << 3) | (g >> 2);
+                                            let pb = (b << 3) | (b >> 2);
                                             framebuffer[start + screen_x as usize] = 0xFF000000 | ((pb as u32) << 16) | ((pg as u32) << 8) | (pr as u32);
                                         }
                                     }
@@ -364,9 +367,12 @@ impl Ppu {
                                         if color_idx != 0 {
                                             let pal_idx = (pal_bank as usize) * 16 + color_idx;
                                             let c = (self.palette[0x200 + pal_idx * 2] as u16) | ((self.palette[0x200 + pal_idx * 2 + 1] as u16) << 8);
-                                            let pr = (c & 0x1F) << 3;
-                                            let pg = ((c >> 5) & 0x1F) << 3;
-                                            let pb = ((c >> 10) & 0x1F) << 3;
+                                            let r = c & 0x1F;
+                                            let g = (c >> 5) & 0x1F;
+                                            let b = (c >> 10) & 0x1F;
+                                            let pr = (r << 3) | (r >> 2);
+                                            let pg = (g << 3) | (g >> 2);
+                                            let pb = (b << 3) | (b >> 2);
                                             framebuffer[start + screen_x as usize] = 0xFF000000 | ((pb as u32) << 16) | ((pg as u32) << 8) | (pr as u32);
                                         }
                                     }

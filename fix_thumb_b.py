@@ -3,15 +3,21 @@ import sys
 with open("src/cpu/arm7tdmi.rs", "r") as f:
     src = f.read()
 
-new_src = src.replace("""        // Thumb branch offsets are based on PC+4, but our PC is currently at PC+2.
-        // So we add 2 to it before computing.
+new_src = src.replace("""    fn execute_thumb_cond_branch(&mut self, instr: u16, bus: &mut dyn Bus) {
+        let cond = (instr >> 8) & 0xF;
+        let offset = (instr & 0xFF) as i8 as i32;
         if self.check_cond(cond as u32) {
             self.regs[15] = self.regs[15].wrapping_add(2).wrapping_add((offset << 1) as u32);
             self.reload_pipeline();
-        }""", """        if self.check_cond(cond as u32) {
+        }
+    }""", """    fn execute_thumb_cond_branch(&mut self, instr: u16, bus: &mut dyn Bus) {
+        let cond = (instr >> 8) & 0xF;
+        let offset = (instr & 0xFF) as i8 as i32;
+        if self.check_cond(cond as u32) {
             self.regs[15] = self.regs[15].wrapping_add((offset << 1) as u32);
             self.reload_pipeline();
-        }""")
+        }
+    }""")
 
 new_src = new_src.replace("""    fn execute_thumb_uncond_branch(&mut self, instr: u16, bus: &mut dyn Bus) {
         let offset = (instr & 0x7FF) as i32;
