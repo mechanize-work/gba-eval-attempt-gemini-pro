@@ -114,7 +114,7 @@ impl Ppu {
         
         if forced_blank {
             for i in 0..240 {
-                framebuffer[start + i] = 0xFF000000; // Black
+                framebuffer[start + i] = 0xFFFFFFFF; // White
             }
             return;
         }
@@ -130,7 +130,7 @@ impl Ppu {
         let r = (r0 << 3) | (r0 >> 2);
         let g = (g0 << 3) | (g0 >> 2);
         let b = (b0 << 3) | (b0 >> 2);
-        let color = 0xFF000000 | (b << 16) | (g << 8) | r;
+        let color = 0xFF000000 | ((b as u32) << 16) | ((g as u32) << 8) | (r as u32);
 
         for i in 0..240 {
             framebuffer[start + i] = color;
