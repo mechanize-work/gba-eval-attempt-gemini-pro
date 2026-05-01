@@ -293,7 +293,6 @@ impl Cpu {
         let instr = self.pipeline[0];
         self.pipeline[0] = self.pipeline[1];
 
-        // 1 cycle per instruction is actually a very good approximation for GBA Thumb code due to prefetch.
         self.cycles += 1;
 
         if self.get_t() {

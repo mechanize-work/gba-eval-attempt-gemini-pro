@@ -280,7 +280,6 @@ impl Ppu {
                 if mode == 3 { continue; } // Prohibited
 
                 let mosaic = (attr0 & 0x1000) != 0;
-                let color_mode_256 = (attr0 & 0x2000) != 0;
                 let shape = (attr0 >> 14) & 3;
 
                 let x = attr1 & 0x1FF;
@@ -289,8 +288,9 @@ impl Ppu {
                 let h_flip = !affine && (attr1 & 0x1000) != 0;
                 let v_flip = !affine && (attr1 & 0x2000) != 0;
                 let size = (attr1 >> 14) & 3;
+                let color_mode_256 = (attr0 & 0x2000) != 0;
 
-                let tile_num = attr2 & 0x3FF;
+                let tile_num = if color_mode_256 { attr2 & 0x3FE } else { attr2 & 0x3FF };
                 let priority = ((attr2 >> 10) & 3) as u8;
                 let pal_bank = (attr2 >> 12) & 0xF;
 
