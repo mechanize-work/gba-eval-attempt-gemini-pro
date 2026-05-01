@@ -992,14 +992,16 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         let cond = (instr >> 8) & 0xF;
         let offset = (instr & 0xFF) as i8 as i32;
         if self.check_cond(cond as u32) {
-            self.regs[15] = self.regs[15].wrapping_add((offset << 1) as u32);
+            // Wait, PC is already instruction+2 because of the loop!
+            // But thumb branch is PC+4! So we must add 2!
+            self.regs[15] = self.regs[15].wrapping_add(2).wrapping_add((offset << 1) as u32);
             self.reload_pipeline();
         }
     }
     fn execute_thumb_uncond_branch(&mut self, instr: u16, bus: &mut dyn Bus) {
         let offset = (instr & 0x7FF) as i32;
         let signed_offset = if (offset & 0x400) != 0 { offset | (!0x7FF) } else { offset };
-        self.regs[15] = self.regs[15].wrapping_add((signed_offset << 1) as u32);
+        self.regs[15] = self.regs[15].wrapping_add(2).wrapping_add((signed_offset << 1) as u32);
         self.reload_pipeline();
     }
     fn execute_thumb_bl(&mut self, instr: u16, bus: &mut dyn Bus) {
