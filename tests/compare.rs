@@ -89,7 +89,7 @@ fn test_compare_frame_60() {
             fb[i*4+2] = ((dummy_fb[i] >> 16) & 0xFF) as u8;
         }
         
-        let mut ref_file = File::open("/tmp/ref60/frame_00060.ppm").unwrap();
+        let mut ref_file = File::open("/tmp/ref/frame_00060.ppm").unwrap();
         let mut ref_data = Vec::new();
         ref_file.read_to_end(&mut ref_data).unwrap();
         
