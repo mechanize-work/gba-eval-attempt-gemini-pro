@@ -14,10 +14,11 @@ fn test_compare_frame_60() {
         emu_load_rom(rom.len() as i32);
 
         let mut dummy_fb = [0u32; 240 * 160];
-        let mut cycle_count = 0; let mut count_a = 0;
+        let mut _cycle_count = 0; let mut count_a = 0;
         let mut prev_pc_region = 0;
 
         for i in 0..60 {
+            println!("End of frame {}: PC={:08X}", i, gba_mut().cpu.regs[15]);
             for _ in 0..280896 {
                 
                 let pc = gba_mut().cpu.regs[15];
@@ -70,8 +71,8 @@ fn test_compare_frame_60() {
                     count_a += 1;
                 }
 
-                if true_pc >= 0x08000220 && true_pc <= 0x08000240 { println!("Trace: PC={:08X} I={:08X} R0={:08X} R1={:08X} LR={:08X}", gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }), 0, gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], gba_mut().cpu.regs[14]); }
-gba_mut().step(&mut dummy_fb); cycle_count += 1;
+                if _cycle_count < 100 { println!("Trace: PC={:08X} I={:08X} R0={:08X} R1={:08X} LR={:08X}", gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }), 0, gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], gba_mut().cpu.regs[14]); }
+gba_mut().step(&mut dummy_fb); _cycle_count += 1;
             }
             if true {
                 let pc = gba_mut().cpu.regs[15];
@@ -81,10 +82,10 @@ gba_mut().step(&mut dummy_fb); cycle_count += 1;
                 let pal1 = gba_mut().mmu.ppu.palette[1];
                 let mut nonzero_vram = 0;
                 for b in gba_mut().mmu.ppu.vram.iter() { if *b != 0 { nonzero_vram += 1; } }
-                if i == 59 { println!("Frame {}: PC: {:08X}, DISPCNT: {:04X}, BG2CNT: {:04X}, PAL0: {:02X}{:02X}, VRAM non-zero: {}", i, pc, dispcnt, bg2cnt, pal1, pal0, nonzero_vram); }
             }
         }
         
+        for fb_frame in 1..=60 { println!("Frame {} ended at PC={:08X}", fb_frame, gba_mut().cpu.regs[15]); }
         // Since we didn't write to the real framebuffer, let's copy dummy_fb to test
         let mut fb = [0u8; 240 * 160 * 4];
         for i in 0..240*160 {

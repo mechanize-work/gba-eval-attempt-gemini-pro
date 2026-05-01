@@ -935,9 +935,6 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         let r_list = instr & 0xFF;
 
         let mut addr = self.regs[rb];
-        let num_regs = if r_list == 0 { 0 } else { r_list.count_ones() };
-        
-        let start_addr = addr;
 
         for i in 0..8 {
             if (r_list & (1 << i)) != 0 {
