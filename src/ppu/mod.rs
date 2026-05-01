@@ -324,7 +324,7 @@ impl Ppu {
                         let screen_x = signed_x + local_x;
                         if screen_x >= 0 && screen_x < 240 {
                             let sx = screen_x as usize;
-                            if priority >= line_priorities[sx] { continue; }
+                            if priority > line_priorities[sx] { continue; }
                             let draw_x = if h_flip { width - 1 - local_x } else { local_x };
 
                             let tile_x = draw_x / 8;
