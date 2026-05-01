@@ -73,7 +73,11 @@ impl Gba {
                 let old_cpsr = self.cpu.cpsr;
                 self.cpu.set_mode(crate::cpu::arm7tdmi::Mode::Irq);
                 self.cpu.spsr = old_cpsr;
-                self.cpu.regs[14] = if self.cpu.get_t() { self.cpu.regs[15] } else { self.cpu.regs[15].wrapping_sub(4) };
+                self.cpu.regs[14] = if self.cpu.pipeline_empty {
+                    self.cpu.regs[15].wrapping_add(4)
+                } else {
+                    self.cpu.regs[15]
+                };
                 self.cpu.set_t(false);
                 self.cpu.set_i(true);
                 self.cpu.regs[15] = 0x00000018;
