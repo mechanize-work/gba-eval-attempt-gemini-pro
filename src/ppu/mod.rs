@@ -18,9 +18,12 @@ pub struct Ppu {
     pub bg3hofs: u16,
     pub bg3vofs: u16,
     pub keyinput: u16,
-}
+    pub bldcnt: u16,
+    pub bldalpha: u16,
+    pub bldy: u16,
+    }
 
-impl Ppu {
+    impl Ppu {
     pub fn new() -> Self {
         Self {
             vram: Box::new([0; 96 * 1024]),
@@ -41,7 +44,10 @@ impl Ppu {
             bg2vofs: 0,
             bg3hofs: 0,
             bg3vofs: 0,
-            keyinput: 0x03FF, // All unpressed by default
+            keyinput: 0x03FF,
+            bldcnt: 0,
+            bldalpha: 0,
+            bldy: 0,
         }
     }
 
@@ -104,7 +110,13 @@ impl Ppu {
             0x0400001D => self.bg3hofs = (self.bg3hofs & 0x00FF) | ((val as u16) << 8),
             0x0400001E => self.bg3vofs = (self.bg3vofs & 0xFF00) | (val as u16),
             0x0400001F => self.bg3vofs = (self.bg3vofs & 0x00FF) | ((val as u16) << 8),
-            _ => {}
+            0x04000050 => self.bldcnt = (self.bldcnt & 0xFF00) | (val as u16),
+            0x04000051 => self.bldcnt = (self.bldcnt & 0x00FF) | ((val as u16) << 8),
+            0x04000052 => self.bldalpha = (self.bldalpha & 0xFF00) | (val as u16),
+            0x04000053 => self.bldalpha = (self.bldalpha & 0x00FF) | ((val as u16) << 8),
+            0x04000054 => self.bldy = (self.bldy & 0xFF00) | (val as u16),
+            0x04000055 => self.bldy = (self.bldy & 0x00FF) | ((val as u16) << 8),
+            _ => {},
         }
     }
 
@@ -121,7 +133,50 @@ impl Ppu {
 
         let mode = self.dispcnt & 7;
         let mut line_priorities = [4u8; 240];
+        let mut line_layers = [5u8; 240];
+        let effect = (self.bldcnt >> 6) & 3;
+        let target1 = self.bldcnt & 0x3F;
+        let target2 = (self.bldcnt >> 8) & 0x3F;
+        let eva = (self.bldalpha & 0x1F).min(16) as u32;
+        let evb = ((self.bldalpha >> 8) & 0x1F).min(16) as u32;
+        let evy = (self.bldy & 0x1F).min(16) as u32;
+
+        let mut line_layers = [5u8; 240];
         
+        
+macro_rules! blend_and_draw {
+    ($fb:expr, $idx:expr, $pr:expr, $pg:expr, $pb:expr, $layer:expr, $prio:expr) => {
+        let is_t1 = (target1 & (1 << $layer)) != 0;
+        let is_t2 = (target2 & (1 << line_layers[$idx])) != 0;
+        let mut final_r = $pr as u32;
+        let mut final_g = $pg as u32;
+        let mut final_b = $pb as u32;
+        
+        if is_t1 && effect != 0 {
+            if effect == 1 && is_t2 {
+                let old_c = $fb[start + $idx];
+                let old_r = old_c & 0xFF;
+                let old_g = (old_c >> 8) & 0xFF;
+                let old_b = (old_c >> 16) & 0xFF;
+                final_r = ((final_r * eva + old_r * evb) / 16).min(255);
+                final_g = ((final_g * eva + old_g * evb) / 16).min(255);
+                final_b = ((final_b * eva + old_b * evb) / 16).min(255);
+            } else if effect == 2 {
+                final_r = final_r + ((255 - final_r) * evy / 16);
+                final_g = final_g + ((255 - final_g) * evy / 16);
+                final_b = final_b + ((255 - final_b) * evy / 16);
+            } else if effect == 3 {
+                final_r = final_r - (final_r * evy / 16);
+                final_g = final_g - (final_g * evy / 16);
+                final_b = final_b - (final_b * evy / 16);
+            }
+        }
+        $fb[start + $idx] = 0xFF000000 | (final_b << 16) | (final_g << 8) | final_r;
+        line_layers[$idx] = $layer;
+        line_priorities[$idx] = $prio;
+    }
+}
+
         // Render backdrop color (color 0 of palette 0)
         let c0 = (self.palette[0] as u32) | ((self.palette[1] as u32) << 8);
         let r0 = c0 & 0x1F;
@@ -130,7 +185,24 @@ impl Ppu {
         let r = (r0 << 3) | (r0 >> 2);
         let g = (g0 << 3) | (g0 >> 2);
         let b = (b0 << 3) | (b0 >> 2);
-        let color = 0xFF000000 | ((b as u32) << 16) | ((g as u32) << 8) | (r as u32);
+        
+        let is_t1 = (target1 & (1 << 5)) != 0;
+        let mut final_r = r as u32;
+        let mut final_g = g as u32;
+        let mut final_b = b as u32;
+        if is_t1 && effect != 0 {
+            if effect == 2 {
+                final_r = final_r + ((255 - final_r) * evy / 16);
+                final_g = final_g + ((255 - final_g) * evy / 16);
+                final_b = final_b + ((255 - final_b) * evy / 16);
+            } else if effect == 3 {
+                final_r = final_r - (final_r * evy / 16);
+                final_g = final_g - (final_g * evy / 16);
+                final_b = final_b - (final_b * evy / 16);
+            }
+        }
+        let color = 0xFF000000 | (final_b << 16) | (final_g << 8) | final_r;
+
 
         for i in 0..240 {
             framebuffer[start + i] = color;
@@ -202,8 +274,7 @@ impl Ppu {
                                 let pr = (r << 3) | (r >> 2);
                                 let pg = (g << 3) | (g >> 2);
                                 let pb = (b << 3) | (b >> 2);
-                                framebuffer[start + x] = 0xFF000000 | ((pb as u32) << 16) | ((pg as u32) << 8) | (pr as u32);
-                                line_priorities[x] = bg_prio;
+                                blend_and_draw!(framebuffer, x, pr, pg, pb, bg, bg_prio);
                             }
                         }
                     } else {
@@ -220,8 +291,7 @@ impl Ppu {
                                 let pr = (r << 3) | (r >> 2);
                                 let pg = (g << 3) | (g >> 2);
                                 let pb = (b << 3) | (b >> 2);
-                                framebuffer[start + x] = 0xFF000000 | ((pb as u32) << 16) | ((pg as u32) << 8) | (pr as u32);
-                                line_priorities[x] = bg_prio;
+                                blend_and_draw!(framebuffer, x, pr, pg, pb, bg, bg_prio);
                             }
                         }
                     }
@@ -356,7 +426,7 @@ impl Ppu {
                                             let pr = (r << 3) | (r >> 2);
                                             let pg = (g << 3) | (g >> 2);
                                             let pb = (b << 3) | (b >> 2);
-                                            framebuffer[start + screen_x as usize] = 0xFF000000 | ((pb as u32) << 16) | ((pg as u32) << 8) | (pr as u32);
+                                            blend_and_draw!(framebuffer, screen_x as usize, pr, pg, pb, 4, priority);
                                         }
                                     }
                                 } else {
@@ -373,7 +443,7 @@ impl Ppu {
                                             let pr = (r << 3) | (r >> 2);
                                             let pg = (g << 3) | (g >> 2);
                                             let pb = (b << 3) | (b >> 2);
-                                            framebuffer[start + screen_x as usize] = 0xFF000000 | ((pb as u32) << 16) | ((pg as u32) << 8) | (pr as u32);
+                                            blend_and_draw!(framebuffer, screen_x as usize, pr, pg, pb, 4, priority);
                                         }
                                     }
                                 }

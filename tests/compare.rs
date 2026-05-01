@@ -130,7 +130,18 @@ gba_mut().step(&mut dummy_fb); _cycle_count += 1;
             
             if r != ref_r || g != ref_g || b != ref_b {
                 if printed < 10 {
-                    if diff_count == 0 { println!("IO 50={:04X} 52={:04X} 54={:04X}", (gba_mut().mmu.ppu.bldcnt_0 as u16), gba_mut().mmu.ppu.bldalpha, gba_mut().mmu.ppu.bldy); } 
+                    if diff_count == 0 { println!("PAL0: {:02X}{:02X}", gba_mut().mmu.ppu.palette[1], gba_mut().mmu.ppu.palette[0]); }
+        // if diff_count < 10 { IO 50={:04X} 52={:04X} 54={:04X}", i, gba_mut().mmu.ppu.bldcnt, gba_mut().mmu.ppu.bldalpha, gba_mut().mmu.ppu.bldy); } 
+        // if diff_count == 0 { 52={:04X} 54={:04X}", gba_mut().mmu.ppu.bldcnt, gba_mut().mmu.ppu.bldalpha, gba_mut().mmu.ppu.bldy); } 
+        if diff_count == 0 { println!("DMA3: {:08X} {:08X} {:04X} {:04X}", gba_mut().mmu.dma[3].sad, gba_mut().mmu.dma[3].dad, gba_mut().mmu.dma[3].count, gba_mut().mmu.dma[3].ctrl); }
+        // println!("DMA0: {:08X} {:08X} {:04X} {:04X} DMA1: {:08X} {:08X} {:04X} {:04X}", gba_mut().mmu.dma[0].sad, gba_mut().mmu.dma[0].dad, gba_mut().mmu.dma[0].count, gba_mut().mmu.dma[0].ctrl, gba_mut().mmu.dma[1].sad, gba_mut().mmu.dma[1].dad, gba_mut().mmu.dma[1].count, gba_mut().mmu.dma[1].ctrl); }
+        // println!("DMA3: {:08X} {:08X} {:04X} {:04X}", gba_mut().mmu.dma[3].sad, gba_mut().mmu.dma[3].dad, gba_mut().mmu.dma[3].count, gba_mut().mmu.dma[3].ctrl); }
+        // println!("DMA0: {:08X} {:08X} {:04X} {:04X}", gba_mut().mmu.dma[0].sad, gba_mut().mmu.dma[0].dad, gba_mut().mmu.dma[0].count, gba_mut().mmu.dma[0].ctrl); }
+        if diff_count < 10 { println!("VBLANKS: {}", count_a); }
+        if gba_mut().mmu.ppu.bldalpha & 0x1F != 0 { println!("EVA = {}", gba_mut().mmu.ppu.bldalpha & 0x1F); }
+        if gba_mut().cpu.regs[15] == 0x08012A46 && count_a % 10000 == 0 { println!("Stuck at 08012A46! R0={:08X} R1={:08X}", gba_mut().cpu.regs[0], gba_mut().cpu.regs[1]); }
+        if count_a % 100000 == 0 { println!("IE={:04X} IF={:04X}", gba_mut().mmu.ie, gba_mut().mmu.i_f); }
+        // if diff_count == 0 { println!("IO 50={:04X} 52={:04X} 54={:04X}", (gba_mut().mmu.ppu.bldcnt as u16), gba_mut().mmu.ppu.bldalpha, gba_mut().mmu.ppu.bldy); } 
         println!("Diff at {}: Em=({},{},{}) Ref=({},{},{})", i, r, g, b, ref_r, ref_g, ref_b);
                     printed += 1;
                 }
@@ -140,6 +151,8 @@ gba_mut().step(&mut dummy_fb); _cycle_count += 1;
         
         let mut nonzero = 0; for i in 0..96*1024 { if gba_mut().mmu.ppu.vram[i] != 0 { nonzero += 1; } } println!("VRAM Non-zero bytes: {}", nonzero);
         let map_val = (gba_mut().mmu.ppu.vram[0xE000] as u16) | ((gba_mut().mmu.ppu.vram[0xE001] as u16) << 8); let p = &gba_mut().mmu.ppu.palette;
+        let p = &gba_mut().mmu.ppu.palette;
+        for i in 0..512 { let c = (p[i*2] as u16) | ((p[i*2+1] as u16) << 8); let r=c&31; let g=(c>>5)&31; let b=(c>>10)&31; if r==2 && g==4 && b==3 { println!("Found (2,4,3) at index {}", i); } }
         for i in 0..512 { let c = (p[i*2] as u16) | ((p[i*2+1] as u16) << 8); if c == 0x0421 { println!("Found 0x0421 at index {}", i); } }
         println!("VRAM 0: {:02X} {:02X}", gba_mut().mmu.ppu.vram[0], gba_mut().mmu.ppu.vram[1]);
         for obj_idx in 0..128 {
@@ -156,6 +169,8 @@ gba_mut().step(&mut dummy_fb); _cycle_count += 1;
         println!("PAL0: {:02X}{:02X}, DISPCNT: {:04X}, BG0CNT: {:04X}", gba_mut().mmu.ppu.palette[1], gba_mut().mmu.ppu.palette[0], gba_mut().mmu.ppu.dispcnt, gba_mut().mmu.ppu.bg0cnt);
         let p = &gba_mut().mmu.ppu.palette;
         let p = &gba_mut().mmu.ppu.palette;
+        let p = &gba_mut().mmu.ppu.palette;
+        for i in 0..512 { let c = (p[i*2] as u16) | ((p[i*2+1] as u16) << 8); let r=c&31; let g=(c>>5)&31; let b=(c>>10)&31; if r==2 && g==4 && b==3 { println!("Found (2,4,3) at index {}", i); } }
         for i in 0..512 { let c = (p[i*2] as u16) | ((p[i*2+1] as u16) << 8); if c == 0x0421 { println!("Found 0x0421 at index {}", i); } }
         println!("Palette starts with: {:02X}{:02X} {:02X}{:02X} {:02X}{:02X} {:02X}{:02X}", p[1], p[0], p[3], p[2], p[5], p[4], p[7], p[6]);
         println!("Frame 1 differences: {} pixels out of 38400", diff_count);
