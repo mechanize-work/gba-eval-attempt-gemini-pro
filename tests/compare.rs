@@ -22,19 +22,17 @@ fn test_compare_frame_60() {
             for _ in 0..280896 {
                 
                 let pc = gba_mut().cpu.regs[15];
-                if _cycle_count > 204000 && _cycle_count < 205000 { println!("Trace: PC={:08X} R1={:08X} LR={:08X}", pc.wrapping_sub(2), gba_mut().cpu.regs[1], gba_mut().cpu.regs[14]); }
                 if pc == 0x0800014A { println!("REACHED 0800014A!"); }
                 if pc == 0x08000154 { println!("REACHED 08000154!"); }
                 if pc == 0x08000196 && gba_mut().cpu.regs[1] == 0 { println!("R1 IS 0! Z={}", gba_mut().cpu.get_z()); }
                 if pc == 0x08000196 { println!("AT 08000196 LR={:08X} R0={:08X} R1={:08X} cycles={}", gba_mut().cpu.regs[14], gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], _cycle_count); }
                 let true_pc = pc.wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 });
+                if true_pc == 0x08000140 { println!("R1 BEFORE MEMSET 3 = {:08X}", gba_mut().cpu.regs[1]); }
                 if true_pc == 0x08000186 {
-                    println!("MEMSET CALLED! R0={:08X} R1={:08X}", gba_mut().cpu.regs[0], gba_mut().cpu.regs[1]);
                 }
 
                 let region = pc >> 24;
 
-                if pc == 0x08 { println!("SWI called!"); }
                 if pc == 0x00000010 {
                     // We just jumped to SWI vector
                     let lr = gba_mut().cpu.regs[14];
@@ -48,7 +46,6 @@ fn test_compare_frame_60() {
                         } else {
                             0
                         };
-                        println!("Thumb SWI called: {:02X} R0={:08X} R1={:08X} R2={:08X}", swi_instr & 0xFF, gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], gba_mut().cpu.regs[2]);
                     } else {
                         // It was an ARM SWI
                         let swi_addr = lr.wrapping_sub(4);
@@ -58,7 +55,6 @@ fn test_compare_frame_60() {
                         } else {
                             0
                         };
-                        println!("ARM SWI called: {:06X}", swi_instr & 0xFFFFFF);
                     }
                 }
                 
@@ -72,16 +68,13 @@ fn test_compare_frame_60() {
                 
                 let true_pc = gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 }); count_a += 1;
                 if gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 }) == 0x080003B6 || gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 }) == 0x080003B8 || gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 }) == 0x080003BA || gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 }) == 0x080003BC {
-                    println!("Trace: PC={:08X} SP={:08X} LR={:08X} R0={:08X} R1={:08X} R2={:08X}", gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 }), gba_mut().cpu.regs[13], gba_mut().cpu.regs[14], gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], gba_mut().cpu.regs[2]);
                     count_a += 1;
                 }
 
-                if _cycle_count < 100 { println!("Trace: PC={:08X} I={:08X} R0={:08X} R1={:08X} LR={:08X}", gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }), 0, gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], gba_mut().cpu.regs[14]); }
 gba_mut().step(&mut dummy_fb); _cycle_count += 1;
             }
             if true {
                 let pc = gba_mut().cpu.regs[15];
-                if _cycle_count > 204000 && _cycle_count < 205000 { println!("Trace: PC={:08X} R1={:08X} LR={:08X}", pc.wrapping_sub(2), gba_mut().cpu.regs[1], gba_mut().cpu.regs[14]); }
                 if pc == 0x0800014A { println!("REACHED 0800014A!"); }
                 if pc == 0x08000154 { println!("REACHED 08000154!"); }
                 if pc == 0x08000196 && gba_mut().cpu.regs[1] == 0 { println!("R1 IS 0! Z={}", gba_mut().cpu.get_z()); }
