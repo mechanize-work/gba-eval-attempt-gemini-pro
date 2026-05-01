@@ -40,6 +40,7 @@ impl Mmu {
 
     pub fn trigger_dma(&mut self, channel: usize) {
         println!("DMA {} triggered! SAD={:08X} DAD={:08X} count={}", channel, self.dma[channel].sad, self.dma[channel].dad, self.dma[channel].count);
+        println!("DMA {} triggered! SAD={:08X} DAD={:08X} count={}", channel, self.dma[channel].sad, self.dma[channel].dad, self.dma[channel].count);
         let sad = self.dma[channel].sad;
         let dad = self.dma[channel].dad;
         let count = if self.dma[channel].count == 0 {
@@ -96,7 +97,7 @@ impl Mmu {
 
     pub fn new() -> Self {
         Self {
-            bios: vec![0; 16 * 1024],
+            bios: include_bytes!("../../spec/gba_bios_stub.bin").to_vec(),
             ewram: Box::new([0; 256 * 1024]),
             iwram: Box::new([0; 32 * 1024]),
             rom: vec![0; 32 * 1024 * 1024],
@@ -165,7 +166,7 @@ impl Bus for Mmu {
         match addr >> 24 {
             0x02 => self.ewram[(addr & 0x3FFFF) as usize] = val,
             0x03 => self.iwram[(addr & 0x7FFF) as usize] = val,
-            0x04 => { println!("IO Write {:08X}={:02X}", addr, val);
+            0x04 => { if addr != 0x04000208 && addr != 0x04000209 && addr != 0x0400020A && addr != 0x0400020B { println!("IO Write {:08X}={:02X}", addr, val); } println!("IO Write {:08X}={:02X}", addr, val);
                 match addr & 0xFFFFFF {
                     0x200 => self.ie = (self.ie & 0xFF00) | (val as u16),
                     0x201 => self.ie = (self.ie & 0x00FF) | ((val as u16) << 8),

@@ -3,16 +3,64 @@ import sys
 with open("src/cpu/arm7tdmi.rs", "r") as f:
     src = f.read()
 
-# Wait... the ARM7TDMI manual says:
-# "To allow for a larger offset, the instruction is separated into two 16-bit instructions:
-# 1) H=0: LR = PC + (SignExtend(offset_11) << 12)
-# 2) H=1: PC = LR + (offset_11 << 1), LR = old_PC + 2 | 1"
-# My code is doing exactly this:
-# if (instr & 0x0800) == 0 { // H=0
-#    let signed_offset = if (offset & 0x400) != 0 { offset | (!0x7FF) } else { offset };
-#    self.regs[14] = self.regs[15].wrapping_add((signed_offset << 12) as u32);
-# } else {
-#    let next_pc = self.regs[15].wrapping_sub(2);
-#    self.regs[15] = self.regs[14].wrapping_add((offset << 1) as u32);
-#    self.regs[14] = next_pc | 1;
-# }
+new_src = src.replace("""    fn execute_thumb_bl(&mut self, instr: u16, bus: &mut dyn Bus) {
+        let offset = (instr & 0x7FF) as i32;
+        if (instr & 0x0800) == 0 {
+            let mut signed_offset = offset;
+            if (signed_offset & 0x400) != 0 {
+                signed_offset |= !0x7FF;
+            }
+            self.regs[14] = self.regs[15].wrapping_add(2).wrapping_add((signed_offset << 12) as u32);
+        } else {
+            let next_pc = self.regs[15].wrapping_sub(2) | 1;
+            self.regs[15] = self.regs[14].wrapping_add((offset << 1) as u32);
+            self.regs[14] = next_pc;
+            self.reload_pipeline();
+        }
+    }""", """    fn execute_thumb_bl(&mut self, instr: u16, bus: &mut dyn Bus) {
+        let offset = (instr & 0x7FF) as i32;
+        if (instr & 0x0800) == 0 {
+            let mut signed_offset = offset;
+            if (signed_offset & 0x400) != 0 {
+                signed_offset |= !0x7FF;
+            }
+            self.regs[14] = self.regs[15].wrapping_add((signed_offset << 12) as u32);
+        } else {
+            let next_pc = self.regs[15].wrapping_sub(2) | 1;
+            self.regs[15] = self.regs[14].wrapping_add((offset << 1) as u32);
+            self.regs[14] = next_pc;
+            println!("BL Target: {:08X}", self.regs[15]);
+            self.reload_pipeline();
+        }
+    }""")
+
+new_src = new_src.replace("""    fn execute_thumb_cond_branch(&mut self, instr: u16, bus: &mut dyn Bus) {
+        let cond = (instr >> 8) & 0xF;
+        let offset = (instr & 0xFF) as i8 as i32;
+        if self.check_cond(cond as u32) {
+            self.regs[15] = self.regs[15].wrapping_add(2).wrapping_add((offset << 1) as u32);
+            self.reload_pipeline();
+        }
+    }""", """    fn execute_thumb_cond_branch(&mut self, instr: u16, bus: &mut dyn Bus) {
+        let cond = (instr >> 8) & 0xF;
+        let offset = (instr & 0xFF) as i8 as i32;
+        if self.check_cond(cond as u32) {
+            self.regs[15] = self.regs[15].wrapping_add((offset << 1) as u32);
+            self.reload_pipeline();
+        }
+    }""")
+
+new_src = new_src.replace("""    fn execute_thumb_uncond_branch(&mut self, instr: u16, bus: &mut dyn Bus) {
+        let offset = (instr & 0x7FF) as i32;
+        let signed_offset = if (offset & 0x400) != 0 { offset | (!0x7FF) } else { offset };
+        self.regs[15] = self.regs[15].wrapping_add(2).wrapping_add((signed_offset << 1) as u32);
+        self.reload_pipeline();
+    }""", """    fn execute_thumb_uncond_branch(&mut self, instr: u16, bus: &mut dyn Bus) {
+        let offset = (instr & 0x7FF) as i32;
+        let signed_offset = if (offset & 0x400) != 0 { offset | (!0x7FF) } else { offset };
+        self.regs[15] = self.regs[15].wrapping_add((signed_offset << 1) as u32);
+        self.reload_pipeline();
+    }""")
+
+with open("src/cpu/arm7tdmi.rs", "w") as f:
+    f.write(new_src)
