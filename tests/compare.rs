@@ -58,13 +58,13 @@ fn test_compare_frame_60() {
                 }
                 
                 
-                let true_pc = pc.wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }); count_a += 1;
-                if pc.wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }) == 0x080003B6 || pc.wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }) == 0x080003B8 || pc.wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }) == 0x080003BA || pc.wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }) == 0x080003BC {
-                    println!("Trace: PC={:08X} SP={:08X} LR={:08X} R0={:08X} R4={:08X} R5={:08X}", pc.wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }), gba_mut().cpu.regs[13], gba_mut().cpu.regs[14], gba_mut().cpu.regs[0], gba_mut().cpu.regs[4], gba_mut().cpu.regs[5]);
+                let true_pc = gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 }); count_a += 1;
+                if gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 }) == 0x080003B6 || gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 }) == 0x080003B8 || gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 }) == 0x080003BA || gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 }) == 0x080003BC {
+                    println!("Trace: PC={:08X} SP={:08X} LR={:08X} R0={:08X} R1={:08X} R2={:08X}", gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 }), gba_mut().cpu.regs[13], gba_mut().cpu.regs[14], gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], gba_mut().cpu.regs[2]);
                     count_a += 1;
                 }
 
-                if cycle_count < 100 { println!("Trace: PC={:08X} R0={:08X} LR={:08X}", gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }), gba_mut().cpu.regs[0], gba_mut().cpu.regs[14]); }
+                if cycle_count < 100 { println!("Trace: PC={:08X} I={:08X} R0={:08X} R1={:08X} LR={:08X}", gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }), 0, gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], gba_mut().cpu.regs[14]); }
 gba_mut().step(&mut dummy_fb); cycle_count += 1;
             }
             if true {
