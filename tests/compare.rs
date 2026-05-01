@@ -14,7 +14,7 @@ fn test_compare_frame_60() {
         emu_load_rom(rom.len() as i32);
 
         let mut dummy_fb = [0u32; 240 * 160];
-        let mut cycle_count = 0;
+        let mut cycle_count = 0; let mut count_a = 0;
         let mut prev_pc_region = 0;
 
         for i in 0..60 {
@@ -57,7 +57,8 @@ fn test_compare_frame_60() {
                     prev_pc_region = region;
                 }
                 
-                if cycle_count > 16853040 - 15000 && cycle_count <= 16853040 + 20 {
+                if pc == 0x080003B2 { count_a += 1; }
+if count_a > 0 && count_a < 10 { eprintln!("Trace: PC={:08X} R0={:08X} R1={:08X} R2={:08X}", pc, gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], gba_mut().cpu.regs[2]); count_a += 1; } if count_a < 10 {
                     let pc = gba_mut().cpu.regs[15];
                     let r0 = gba_mut().cpu.regs[0];
                     let r1 = gba_mut().cpu.regs[1];
