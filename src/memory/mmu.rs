@@ -8,7 +8,10 @@ pub struct Mmu {
     pub rom: Vec<u8>,
     pub sram: Box<[u8; 64 * 1024]>,
     pub ppu: Ppu,
-    pub wait_states: usize, // Placeholder for cycles
+    pub wait_states: usize,
+    pub ie: u16,
+    pub i_f: u16,
+    pub ime: u16,
 }
 
 impl Mmu {
@@ -21,6 +24,9 @@ impl Mmu {
             sram: Box::new([0; 64 * 1024]),
             ppu: Ppu::new(),
             wait_states: 0,
+            ie: 0,
+            i_f: 0,
+            ime: 0,
         }
     }
 }
@@ -31,7 +37,17 @@ impl Bus for Mmu {
             0x00 => if addr < 0x4000 { self.bios[addr as usize] } else { 0 },
             0x02 => self.ewram[(addr & 0x3FFFF) as usize],
             0x03 => self.iwram[(addr & 0x7FFF) as usize],
-            0x04 => self.ppu.read8(addr),
+            0x04 => {
+                match addr & 0xFFFFFF {
+                    0x200 => self.ie as u8,
+                    0x201 => (self.ie >> 8) as u8,
+                    0x202 => self.i_f as u8,
+                    0x203 => (self.i_f >> 8) as u8,
+                    0x208 => self.ime as u8,
+                    0x209 => (self.ime >> 8) as u8,
+                    _ => self.ppu.read8(addr),
+                }
+            },
             0x05 => self.ppu.palette[(addr & 0x3FF) as usize],
             0x06 => {
                 let offset = addr & 0x1FFFF;
@@ -69,7 +85,17 @@ impl Bus for Mmu {
         match addr >> 24 {
             0x02 => self.ewram[(addr & 0x3FFFF) as usize] = val,
             0x03 => self.iwram[(addr & 0x7FFF) as usize] = val,
-            0x04 => self.ppu.write8(addr, val),
+            0x04 => {
+                match addr & 0xFFFFFF {
+                    0x200 => self.ie = (self.ie & 0xFF00) | (val as u16),
+                    0x201 => self.ie = (self.ie & 0x00FF) | ((val as u16) << 8),
+                    0x202 => self.i_f &= !(val as u16),
+                    0x203 => self.i_f &= !((val as u16) << 8),
+                    0x208 => self.ime = (self.ime & 0xFF00) | (val as u16),
+                    0x209 => self.ime = (self.ime & 0x00FF) | ((val as u16) << 8),
+                    _ => self.ppu.write8(addr, val),
+                }
+            },
             0x05 => self.ppu.palette[(addr & 0x3FF) as usize] = val,
             0x06 => {
                 let offset = addr & 0x1FFFF;

@@ -24,8 +24,8 @@ impl Gba {
     }
 
     pub fn step(&mut self, framebuffer: &mut [u32; 240 * 160]) {
-        if self.cycles < 50 * 4 {
-            // println!("PC: {:08X}", self.cpu.regs[15]);
+        if self.cycles > 280000 && self.cycles % 4 == 0 {
+            println!("PC: {:08X}", self.cpu.regs[15]);
         }
         self.cpu.step(&mut self.mmu);
         // Assuming 1 instruction = 1 cycle for now, very inaccurate.
@@ -52,16 +52,36 @@ impl Gba {
             let vcount_setting = (self.mmu.ppu.dispstat >> 8) & 0xFF;
             if next_line == vcount_setting {
                 self.mmu.ppu.dispstat |= 1 << 2; // vcounter flag
-                // TODO: trigger irq if enabled
+                if (self.mmu.ppu.dispstat & (1 << 5)) != 0 {
+                    self.mmu.i_f |= 1 << 2; // V-Counter IRQ
+                }
             } else {
                 self.mmu.ppu.dispstat &= !(1 << 2);
             }
             
             // vblank flag
             if next_line >= 160 && next_line <= 226 {
-                self.mmu.ppu.dispstat |= 1;
+                if next_line == 160 {
+                    self.mmu.ppu.dispstat |= 1;
+                    if (self.mmu.ppu.dispstat & (1 << 3)) != 0 {
+                        self.mmu.i_f |= 1 << 0; // V-Blank IRQ
+                    }
+                }
             } else {
                 self.mmu.ppu.dispstat &= !1;
+            }
+
+            // check if IRQ should be processed
+            if self.mmu.ime != 0 && (self.mmu.ie & self.mmu.i_f) != 0 {
+                // Trigger IRQ exception
+                let old_cpsr = self.cpu.cpsr;
+                self.cpu.set_mode(crate::cpu::arm7tdmi::Mode::Irq);
+                self.cpu.spsr = old_cpsr;
+                self.cpu.regs[14] = self.cpu.regs[15]; // Not wrapping_add 4 since we are currently executing
+                self.cpu.set_t(false);
+                self.cpu.set_i(true);
+                self.cpu.regs[15] = 0x00000018;
+                self.cpu.reload_pipeline();
             }
         }
     }

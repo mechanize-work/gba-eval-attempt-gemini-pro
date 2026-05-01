@@ -9,7 +9,7 @@ static mut GBA: *mut Gba = std::ptr::null_mut();
 static mut AUDIO_BUFFER: [i16; 4096] = [0; 4096];
 static mut FRAMEBUFFER: [u32; 240 * 160] = [0; 240 * 160];
 
-fn gba_mut() -> &'static mut Gba {
+pub fn gba_mut() -> &'static mut Gba {
     unsafe {
         if GBA.is_null() {
             let b = Box::new(Gba::new());
@@ -46,7 +46,11 @@ pub extern "C" fn emu_reset() -> i32 {
 }
 
 #[no_mangle]
-pub extern "C" fn emu_set_keys(_k: u32) {
+pub extern "C" fn emu_set_keys(k: u32) {
+    // k is active-high. GBA KEYINPUT (0x04000130) is active-low.
+    // So we invert the bottom 10 bits.
+    let gba_keys = (!k & 0x3FF) as u16;
+    gba_mut().mmu.ppu.keyinput = gba_keys;
 }
 
 #[no_mangle]
@@ -56,7 +60,7 @@ pub extern "C" fn emu_run_frame() {
     // since we do 4 cycles per instruction: 280896 / 4 = 70224 instructions
     unsafe {
         for _ in 0..70224 {
-            gba.step(&mut FRAMEBUFFER);
+            gba.step(&mut *(&raw mut FRAMEBUFFER));
         }
     }
 }

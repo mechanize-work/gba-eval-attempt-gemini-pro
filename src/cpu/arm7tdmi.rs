@@ -115,6 +115,13 @@ impl Cpu {
 
     pub fn get_n(&self) -> bool { (self.cpsr & (1 << 31)) != 0 }
     pub fn get_z(&self) -> bool { (self.cpsr & (1 << 30)) != 0 }
+    pub fn set_i(&mut self, val: bool) {
+        if val {
+            self.cpsr |= 1 << 7;
+        } else {
+            self.cpsr &= !(1 << 7);
+        }
+    }
     pub fn get_c(&self) -> bool { (self.cpsr & (1 << 29)) != 0 }
     pub fn get_v(&self) -> bool { (self.cpsr & (1 << 28)) != 0 }
     pub fn get_t(&self) -> bool { (self.cpsr & (1 << 5)) != 0 }
@@ -285,15 +292,18 @@ impl Cpu {
         self.pipeline[0] = self.pipeline[1];
 
         if self.get_t() {
-            self.pipeline[1] = bus.read16(self.regs[15]) as u32;
-            self.regs[15] = self.regs[15].wrapping_add(2);
             self.execute_thumb(instr as u16, bus);
+            if !self.pipeline_empty {
+                self.pipeline[1] = bus.read16(self.regs[15]) as u32;
+                self.regs[15] = self.regs[15].wrapping_add(2);
+            }
         } else {
-            self.pipeline[1] = bus.read32(self.regs[15]);
-            self.regs[15] = self.regs[15].wrapping_add(4);
-            
             if self.check_cond(instr >> 28) {
                 self.execute_arm(instr, bus);
+            }
+            if !self.pipeline_empty {
+                self.pipeline[1] = bus.read32(self.regs[15]);
+                self.regs[15] = self.regs[15].wrapping_add(4);
             }
         }
     }
@@ -956,8 +966,15 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         }
     }
 
-    fn execute_thumb_swi(&mut self, instr: u16, bus: &mut dyn Bus) {
-        // Not implemented fully, but usually causes an exception
+    fn execute_thumb_swi(&mut self, _instr: u16, _bus: &mut dyn Bus) {
+        let old_cpsr = self.cpsr;
+        self.set_mode(Mode::Supervisor);
+        self.spsr = old_cpsr;
+        self.regs[14] = self.regs[15].wrapping_sub(2); // In THUMB, PC is ahead by 4, but SWI saves PC of next instr
+        self.set_t(false);
+        self.set_i(true);
+        self.regs[15] = 0x00000008;
+        self.reload_pipeline();
     }
 
     
@@ -984,7 +1001,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
     }
     fn execute_thumb_bl(&mut self, instr: u16, bus: &mut dyn Bus) {
         let offset = (instr & 0x7FF) as i32;
-        if (instr & 0x1000) == 0 {
+        if (instr & 0x0800) == 0 {
             let signed_offset = if (offset & 0x400) != 0 { offset | (!0x7FF) } else { offset };
             self.regs[14] = self.regs[15].wrapping_add((signed_offset << 12) as u32);
         } else {
@@ -1206,8 +1223,15 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         self.reload_pipeline();
     }
 
-    fn execute_arm_swi(&mut self, instr: u32, bus: &mut dyn Bus) {
-        // Supervisor call
+    fn execute_arm_swi(&mut self, _instr: u32, _bus: &mut dyn Bus) {
+        let old_cpsr = self.cpsr;
+        self.set_mode(Mode::Supervisor);
+        self.spsr = old_cpsr;
+        self.regs[14] = self.regs[15].wrapping_sub(4);
+        self.set_t(false);
+        self.set_i(true);
+        self.regs[15] = 0x00000008;
+        self.reload_pipeline();
     }
 
     fn execute_arm_coprocessor(&mut self, instr: u32, bus: &mut dyn Bus) {

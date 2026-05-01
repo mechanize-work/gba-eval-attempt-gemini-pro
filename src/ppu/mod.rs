@@ -17,6 +17,7 @@ pub struct Ppu {
     pub bg2vofs: u16,
     pub bg3hofs: u16,
     pub bg3vofs: u16,
+    pub keyinput: u16,
 }
 
 impl Ppu {
@@ -25,7 +26,7 @@ impl Ppu {
             vram: Box::new([0; 96 * 1024]),
             palette: Box::new([0; 1024]),
             oam: Box::new([0; 1024]),
-            dispcnt: 0,
+            dispcnt: 0x0080, // Forced blank by default on power-on
             dispstat: 0,
             vcount: 0,
             bg0cnt: 0,
@@ -40,6 +41,7 @@ impl Ppu {
             bg2vofs: 0,
             bg3hofs: 0,
             bg3vofs: 0,
+            keyinput: 0x03FF, // All unpressed by default
         }
     }
 
@@ -59,6 +61,8 @@ impl Ppu {
             0x0400000D => (self.bg2cnt >> 8) as u8,
             0x0400000E => self.bg3cnt as u8,
             0x0400000F => (self.bg3cnt >> 8) as u8,
+            0x04000130 => self.keyinput as u8,
+            0x04000131 => (self.keyinput >> 8) as u8,
             // Offset registers are write-only, but sometimes readable in some emulators as 0
             _ => 0,
         }
@@ -66,8 +70,14 @@ impl Ppu {
 
     pub fn write8(&mut self, addr: u32, val: u8) {
         match addr {
-            0x04000000 => self.dispcnt = (self.dispcnt & 0xFF00) | (val as u16),
-            0x04000001 => self.dispcnt = (self.dispcnt & 0x00FF) | ((val as u16) << 8),
+            0x04000000 => {
+                self.dispcnt = (self.dispcnt & 0xFF00) | (val as u16);
+                println!("DISPCNT written: {:04X}", self.dispcnt);
+            },
+            0x04000001 => {
+                self.dispcnt = (self.dispcnt & 0x00FF) | ((val as u16) << 8);
+                println!("DISPCNT written: {:04X}", self.dispcnt);
+            },
             0x04000004 => self.dispstat = (self.dispstat & 0xFF00) | (val as u16),
             0x04000005 => self.dispstat = (self.dispstat & 0x00FF) | ((val as u16) << 8),
             0x04000008 => self.bg0cnt = (self.bg0cnt & 0xFF00) | (val as u16),
