@@ -1275,7 +1275,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
     }
 
     fn handle_hle_swi(&mut self, swi_num: u32, bus: &mut dyn Bus) -> bool {
-        println!("SWI {:02X} CALLED", swi_num);
+        println!("SWI {:02X} CALLED! i_f={:04X} ie={:04X} ime={:04X}", swi_num, bus.read16(0x04000202), bus.read16(0x04000200), bus.read16(0x04000208));
         println!("SWI {:02X} src={:08X} dst={:08X} ctrl={:08X}", swi_num, self.regs[0], self.regs[1], self.regs[2]);
         match swi_num {
             0x0B => { // CpuSet
@@ -1326,10 +1326,13 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
                 true
             }
             0x05 => { // VBlankIntrWait
+                bus.write8(0x04000202, 1); // Clear VBlank IF
                 self.halted = true;
                 true
             }
             0x04 => { // IntrWait
+                let wait_flags = self.regs[1];
+                bus.write16(0x04000202, wait_flags as u16); // Clear waited IF
                 self.halted = true;
                 true
             }
