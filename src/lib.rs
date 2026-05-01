@@ -62,9 +62,9 @@ pub extern "C" fn emu_set_keys(k: u32) {
 pub extern "C" fn emu_run_frame() {
     let gba = gba_mut();
     // 1 frame = 280896 cycles approximately
-    let start_cycles = gba.cycles;
+    let start_cycles = gba.cpu.cycles;
     unsafe {
-        while gba.cycles - start_cycles < 280896 {
+        while gba.cpu.cycles - start_cycles < 280896 {
             gba.step(&mut *(&raw mut FRAMEBUFFER));
         }
     }

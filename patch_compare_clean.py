@@ -1,13 +1,11 @@
 import sys
 
 with open("tests/compare.rs", "r") as f:
-    lines = f.readlines()
+    src = f.read()
 
-new_lines = []
-for line in lines:
-    if 'println!("Trace' in line or 'println!("MEMSET' in line or 'println!("SWI called' in line or 'println!("Thumb SWI' in line or 'println!("ARM SWI' in line or 'println!("IO Write' in line:
-        continue
-    new_lines.append(line)
+import re
+src = re.sub(r'for _ in 0\.\.280896 \{.*?if true \{', 'emu_run_frame();\n            if true {', src, flags=re.DOTALL)
+src = re.sub(r'println!\("End of frame.*?\);\n', '', src)
 
 with open("tests/compare.rs", "w") as f:
-    f.writelines(new_lines)
+    f.write(src)

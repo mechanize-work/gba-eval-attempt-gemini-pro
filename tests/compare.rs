@@ -130,7 +130,8 @@ gba_mut().step(&mut dummy_fb); _cycle_count += 1;
             
             if r != ref_r || g != ref_g || b != ref_b {
                 if printed < 10 {
-                    println!("Diff at {}: Em=({},{},{}) Ref=({},{},{})", i, r, g, b, ref_r, ref_g, ref_b);
+                    if diff_count == 0 { println!("IO 50={:04X} 52={:04X} 54={:04X}", (gba_mut().mmu.ppu.bldcnt_0 as u16), gba_mut().mmu.ppu.bldalpha, gba_mut().mmu.ppu.bldy); } 
+        println!("Diff at {}: Em=({},{},{}) Ref=({},{},{})", i, r, g, b, ref_r, ref_g, ref_b);
                     printed += 1;
                 }
                 diff_count += 1;
