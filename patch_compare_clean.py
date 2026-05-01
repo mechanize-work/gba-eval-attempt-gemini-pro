@@ -1,11 +1,18 @@
 import sys
+import re
 
 with open("tests/compare.rs", "r") as f:
     src = f.read()
 
-import re
-src = re.sub(r'for _ in 0\.\.280896 \{.*?if true \{', 'emu_run_frame();\n            if true {', src, flags=re.DOTALL)
-src = re.sub(r'println!\("End of frame.*?\);\n', '', src)
+src = re.sub(r'        if diff_count < 5 \{ println!\("Diff.*?\n', '', src)
+src = re.sub(r'        if diff_count == 0 \{ println!\(.*?\n', '', src)
+src = re.sub(r'        if diff_count < 10 \{ println!\(.*?\n', '', src)
+src = re.sub(r'        // if diff_count.*?\n', '', src)
+src = re.sub(r'        println!\("PAL0.*?\n', '', src)
+src = re.sub(r'        println!\("Palette starts.*?\n', '', src)
+src = re.sub(r'        println!\("CPSR=.*?\n', '', src)
+src = re.sub(r'        for i in 0\.\.512 \{ let c = \(p\[i.*?\n', '', src)
+src = re.sub(r'        let p = &gba_mut\(\).*?\n', '', src)
 
 with open("tests/compare.rs", "w") as f:
     f.write(src)

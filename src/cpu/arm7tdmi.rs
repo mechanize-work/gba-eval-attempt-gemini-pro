@@ -50,6 +50,7 @@ pub struct Cpu {
     pub cycles: usize,
     pub halted: bool,
     pub saved_ime: u16,
+    pub waitcnt: u16,
 }
 
 impl Cpu {
@@ -75,6 +76,7 @@ impl Cpu {
             cycles: 0,
             halted: false,
             saved_ime: 0xFFFF,
+            waitcnt: 0,
         }
     }
 
@@ -82,19 +84,61 @@ impl Cpu {
         Mode::from_bits(self.cpsr)
     }
 
-    pub fn get_memory_cycles_32(&self, addr: u32) -> usize {
+    
+    pub fn get_memory_cycles_32(&self, addr: u32, waitcnt: u16) -> usize {
         match addr >> 24 {
-            0x02 => 3, // EWRAM
-            0x03 => 1, // IWRAM
-            0x04 => 1, // I/O
-            0x05 => 1, // PAL
-            0x06 => 1, // VRAM
-            0x07 => 1, // OAM
-            0x08 | 0x09 | 0x0A | 0x0B | 0x0C | 0x0D => 4, // ROM
-            0x0E => 5, // SRAM
+            0x02 => { // EWRAM
+                let wait = match (waitcnt >> 11) & 0xF {
+                    _ => 3 // Waitcnt bits 24..27 are for waitstate 2... actually ewram wait is bits 24-27 of memory control?
+                    // Actually GBA EWRAM waitstate is 256K, fixed at 3 waitstates in waitcnt? No, WAITCNT is 0x4000204.
+                    // Let's stick to 3.
+                };
+                3
+            },
+            0x08 | 0x09 => { // ROM Wait State 0
+                let s_wait = match (waitcnt >> 4) & 1 { 0 => 2, 1 => 1, _ => 1 };
+                let n_wait = match (waitcnt >> 2) & 3 { 0 => 4, 1 => 3, 2 => 2, 3 => 8, _ => 4 };
+                // Approximate 32-bit read as N + S
+                n_wait + s_wait
+            },
+            0x0A | 0x0B => { // ROM Wait State 1
+                let s_wait = match (waitcnt >> 7) & 1 { 0 => 4, 1 => 1, _ => 1 };
+                let n_wait = match (waitcnt >> 5) & 3 { 0 => 4, 1 => 3, 2 => 2, 3 => 8, _ => 4 };
+                n_wait + s_wait
+            },
+            0x0C | 0x0D => { // ROM Wait State 2
+                let s_wait = match (waitcnt >> 10) & 1 { 0 => 8, 1 => 1, _ => 1 };
+                let n_wait = match (waitcnt >> 8) & 3 { 0 => 4, 1 => 3, 2 => 2, 3 => 8, _ => 4 };
+                n_wait + s_wait
+            },
+            0x0E => { // SRAM
+                let wait = match waitcnt & 3 { 0 => 4, 1 => 3, 2 => 2, 3 => 8, _ => 4 };
+                wait
+            },
             _ => 1,
         }
     }
+
+    pub fn get_memory_cycles_16(&self, addr: u32, waitcnt: u16) -> usize {
+        match addr >> 24 {
+            0x02 => 3, // EWRAM
+            0x08 | 0x09 => { // ROM Wait State 0
+                let n_wait = match (waitcnt >> 2) & 3 { 0 => 4, 1 => 3, 2 => 2, 3 => 8, _ => 4 };
+                n_wait // approximate 16-bit as N
+            },
+            0x0A | 0x0B => { // ROM Wait State 1
+                let n_wait = match (waitcnt >> 5) & 3 { 0 => 4, 1 => 3, 2 => 2, 3 => 8, _ => 4 };
+                n_wait
+            },
+            0x0C | 0x0D => { // ROM Wait State 2
+                let n_wait = match (waitcnt >> 8) & 3 { 0 => 4, 1 => 3, 2 => 2, 3 => 8, _ => 4 };
+                n_wait
+            },
+            0x0E => match waitcnt & 3 { 0 => 4, 1 => 3, 2 => 2, 3 => 8, _ => 4 },
+            _ => 1,
+        }
+    }
+
 
     pub fn set_mode(&mut self, new_mode: Mode) {
         let old_mode = self.get_mode();
@@ -317,7 +361,12 @@ impl Cpu {
         self.pipeline[0] = self.pipeline[1];
 
         let pc = self.regs[15].wrapping_sub(if self.get_t() { 2 } else { 4 });
-        self.cycles += 1;
+        let cycles = if self.get_t() {
+            self.get_memory_cycles_16(pc, self.waitcnt)
+        } else {
+            self.get_memory_cycles_32(pc, self.waitcnt)
+        };
+        self.cycles += cycles;
 
         if self.get_t() {
             self.execute_thumb(instr as u16, bus);
