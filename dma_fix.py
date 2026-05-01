@@ -3,9 +3,9 @@ import sys
 with open("src/memory/mmu.rs", "r") as f:
     src = f.read()
 
-src = src.replace("bios: vec![0; 16 * 1024],", "bios: include_bytes!(\"../../spec/gba_bios_stub.bin\").to_vec(),")
-
-dma_struct = """
+# Add DMA to Mmu
+if "pub struct DmaChannel" not in src:
+    dma_struct = """
 #[derive(Clone, Copy)]
 pub struct DmaChannel {
     pub sad: u32,
@@ -25,12 +25,11 @@ impl DmaChannel {
     }
 }
 """
+    src = src.replace("pub struct Mmu {", dma_struct + "\npub struct Mmu {")
+    src = src.replace("pub ppu: Ppu,", "pub ppu: Ppu,\n    pub dma: [DmaChannel; 4],")
+    src = src.replace("ppu: Ppu::new(),", "ppu: Ppu::new(),\n            dma: [DmaChannel::new(); 4],")
 
-src = src.replace("pub struct Mmu {", dma_struct + "\npub struct Mmu {")
-src = src.replace("pub ppu: Ppu,", "pub ppu: Ppu,\n    pub dma: [DmaChannel; 4],")
-src = src.replace("ppu: Ppu::new(),", "ppu: Ppu::new(),\n            dma: [DmaChannel::new(); 4],")
-
-dma_trigger = """
+    dma_trigger = """
 impl Mmu {
     pub fn trigger_dma(&mut self, channel: usize) {
         let sad = self.dma[channel].sad;
@@ -88,10 +87,9 @@ impl Mmu {
     }
 }
 """
+    src = src.replace("impl Bus for Mmu {", dma_trigger + "\nimpl Bus for Mmu {")
 
-src = src.replace("impl Bus for Mmu {", dma_trigger + "\nimpl Bus for Mmu {")
-
-dma_logic = """
+    dma_logic = """
                     0x0B0 => self.dma[0].sad = (self.dma[0].sad & 0xFFFFFF00) | (val as u32),
                     0x0B1 => self.dma[0].sad = (self.dma[0].sad & 0xFFFF00FF) | ((val as u32) << 8),
                     0x0B2 => self.dma[0].sad = (self.dma[0].sad & 0xFF00FFFF) | ((val as u32) << 16),
@@ -156,8 +154,8 @@ dma_logic = """
                         if (val & 0x80) != 0 { self.trigger_dma(3); }
                     }
 """
+    src = src.replace("                    0x209 => self.ime = (self.ime & 0x00FF) | ((val as u16) << 8),", "                    0x209 => self.ime = (self.ime & 0x00FF) | ((val as u16) << 8),\n" + dma_logic)
 
-src = src.replace("                    0x209 => self.ime = (self.ime & 0x00FF) | ((val as u16) << 8),", "                    0x209 => self.ime = (self.ime & 0x00FF) | ((val as u16) << 8),\n" + dma_logic)
+    with open("src/memory/mmu.rs", "w") as f:
+        f.write(src)
 
-with open("src/memory/mmu.rs", "w") as f:
-    f.write(src)

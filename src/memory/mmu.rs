@@ -22,6 +22,8 @@ impl DmaChannel {
     }
 }
 
+
+
 pub struct Mmu {
     pub bios: Vec<u8>,
     pub ewram: Box<[u8; 256 * 1024]>,
@@ -39,7 +41,6 @@ pub struct Mmu {
 impl Mmu {
 
     pub fn trigger_dma(&mut self, channel: usize) {
-        println!("DMA {} triggered! SAD={:08X} DAD={:08X} count={}", channel, self.dma[channel].sad, self.dma[channel].dad, self.dma[channel].count);
         println!("DMA {} triggered! SAD={:08X} DAD={:08X} count={}", channel, self.dma[channel].sad, self.dma[channel].dad, self.dma[channel].count);
         let sad = self.dma[channel].sad;
         let dad = self.dma[channel].dad;
@@ -111,6 +112,8 @@ impl Mmu {
         }
     }
 }
+
+
 
 impl Bus for Mmu {
     fn read8(&mut self, addr: u32) -> u8 {
@@ -238,6 +241,8 @@ impl Bus for Mmu {
                         self.dma[3].ctrl = (self.dma[3].ctrl & 0x00FF) | ((val as u16) << 8);
                         if (val & 0x80) != 0 { self.trigger_dma(3); }
                     }
+
+
 
                     _ => self.ppu.write8(addr, val),
                 }

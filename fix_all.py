@@ -9,3 +9,11 @@ src = src.replace("self.regs[rd] = (self.regs[15] & !2).wrapping_add(imm);", "se
 
 with open("src/cpu/arm7tdmi.rs", "w") as f:
     f.write(src)
+
+with open("src/sys/gba.rs", "r") as f:
+    gba = f.read()
+
+gba = gba.replace("self.cycles += 4;", "self.cycles += 1;")
+
+with open("src/sys/gba.rs", "w") as f:
+    f.write(gba)
