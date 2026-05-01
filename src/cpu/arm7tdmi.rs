@@ -966,7 +966,10 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         }
     }
 
-    fn execute_thumb_swi(&mut self, _instr: u16, _bus: &mut dyn Bus) {
+    fn execute_thumb_swi(&mut self, instr: u16, bus: &mut dyn Bus) {
+        let swi_num = instr & 0xFF;
+        if self.handle_hle_swi(swi_num as u32, bus) { return; }
+
         let old_cpsr = self.cpsr;
         self.set_mode(Mode::Supervisor);
         self.spsr = old_cpsr;
@@ -1223,7 +1226,11 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         self.reload_pipeline();
     }
 
-    fn execute_arm_swi(&mut self, _instr: u32, _bus: &mut dyn Bus) {
+    fn execute_arm_swi(&mut self, instr: u32, bus: &mut dyn Bus) {
+        let swi_num = (instr & 0xFFFFFF) >> 16; // wait, SWI number is 24 bits. Usually GBA uses bits 16-23? Actually, GBA SWI number is just `instr & 0xFF0000 >> 16`. GBA games use `SWI #0x0C0000` or `SWI 0x0C`.
+        let swi_num = if (instr & 0xFF0000) != 0 { (instr >> 16) & 0xFF } else { instr & 0xFF };
+        if self.handle_hle_swi(swi_num, bus) { return; }
+
         let old_cpsr = self.cpsr;
         self.set_mode(Mode::Supervisor);
         self.spsr = old_cpsr;
@@ -1232,6 +1239,57 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         self.set_i(true);
         self.regs[15] = 0x00000008;
         self.reload_pipeline();
+    }
+
+    fn handle_hle_swi(&mut self, swi_num: u32, bus: &mut dyn Bus) -> bool {
+        match swi_num {
+            0x0B => { // CpuSet
+                let src = self.regs[0];
+                let mut dst = self.regs[1];
+                let ctrl = self.regs[2];
+                let count = ctrl & 0x1FFFFF;
+                let fixed = (ctrl & 0x01000000) != 0;
+                let is_32bit = (ctrl & 0x04000000) != 0;
+
+                if is_32bit {
+                    let mut s = src & !3;
+                    let mut d = dst & !3;
+                    for _ in 0..count {
+                        let val = bus.read32(s);
+                        bus.write32(d, val);
+                        if !fixed { s += 4; }
+                        d += 4;
+                    }
+                } else {
+                    let mut s = src & !1;
+                    let mut d = dst & !1;
+                    for _ in 0..count {
+                        let val = bus.read16(s);
+                        bus.write16(d, val);
+                        if !fixed { s += 2; }
+                        d += 2;
+                    }
+                }
+                true
+            }
+            0x0C => { // CpuFastSet
+                let src = self.regs[0] & !3;
+                let mut dst = self.regs[1] & !3;
+                let ctrl = self.regs[2];
+                let count = ctrl & 0x1FFFFF;
+                let fixed = (ctrl & 0x01000000) != 0;
+
+                let mut s = src;
+                for _ in 0..count {
+                    let val = bus.read32(s);
+                    bus.write32(dst, val);
+                    if !fixed { s += 4; }
+                    dst += 4;
+                }
+                true
+            }
+            _ => false,
+        }
     }
 
     fn execute_arm_coprocessor(&mut self, instr: u32, bus: &mut dyn Bus) {

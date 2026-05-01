@@ -1,35 +1,63 @@
-use gba_emu::gba_mut;
 use std::fs::File;
 use std::io::Read;
+use gba_emu::gba_mut;
 use gba_emu::{emu_init, emu_load_rom, emu_rom_buffer, emu_run_frame, emu_framebuffer};
 
 #[test]
 fn test_compare_frame_60() {
     let rom = std::fs::read("dev-roms/anguna.gba").unwrap();
-    
+
     unsafe {
         emu_init();
         let rom_buf = std::slice::from_raw_parts_mut(emu_rom_buffer(), 32 * 1024 * 1024);
         rom_buf[..rom.len()].copy_from_slice(&rom);
         emu_load_rom(rom.len() as i32);
-        
-        let mut trace_count = 0;
+
         let mut dummy_fb = [0u32; 240 * 160];
-        
+        let mut prev_pc_region = 0;
+
         for i in 0..60 {
-            for _ in 0..70224 {
-                if trace_count < 100 {
-                    let pc = gba_mut().cpu.regs[15];
+            for _ in 0..280896 {
+                let pc = gba_mut().cpu.regs[15];
+                let region = pc >> 24;
+
+                // Track SWI
+                if pc == 0x00000008 {
+                    // We just jumped to SWI vector
+                    let lr = gba_mut().cpu.regs[14];
+                    let t = gba_mut().cpu.spsr & 0x20 != 0;
+                    if t {
+                        // It was a thumb SWI
+                        let swi_addr = lr.wrapping_sub(2);
+                        let offset = (swi_addr & 0x1FFFFFF) as usize;
+                        let swi_instr = if swi_addr >> 24 == 8 {
+                            gba_mut().mmu.rom[offset] as u16 | ((gba_mut().mmu.rom[offset+1] as u16) << 8)
+                        } else {
+                            0
+                        };
+                        println!("Thumb SWI called: {:02X}", swi_instr & 0xFF);
+                    } else {
+                        // It was an ARM SWI
+                        let swi_addr = lr.wrapping_sub(4);
+                        let offset = (swi_addr & 0x1FFFFFF) as usize;
+                        let swi_instr = if swi_addr >> 24 == 8 {
+                            gba_mut().mmu.rom[offset] as u32 | ((gba_mut().mmu.rom[offset+1] as u32) << 8) | ((gba_mut().mmu.rom[offset+2] as u32) << 16) | ((gba_mut().mmu.rom[offset+3] as u32) << 24)
+                        } else {
+                            0
+                        };
+                        println!("ARM SWI called: {:06X}", swi_instr & 0xFFFFFF);
+                    }
+                }
+                
+                if region != prev_pc_region {
                     let mode = gba_mut().cpu.get_mode() as u32;
                     let thumb = gba_mut().cpu.get_t();
-                    let r0 = gba_mut().cpu.regs[0];
-                    let r1 = gba_mut().cpu.regs[1];
-                    println!("Trace: PC={:08X} Mode={:02X} Thumb={} R0={:08X} R1={:08X}", pc, mode, thumb, r0, r1);
-                    trace_count += 1;
+                    println!("Jumped to region {:02X}: PC={:08X} Mode={:02X} Thumb={}", region, pc, mode, thumb);
+                    prev_pc_region = region;
                 }
                 gba_mut().step(&mut dummy_fb);
             }
-            if i % 10 == 0 || i == 59 {
+            if true {
                 let pc = gba_mut().cpu.regs[15];
                 let dispcnt = gba_mut().mmu.ppu.dispcnt;
                 println!("Frame {}: PC: {:08X}, DISPCNT: {:04X}", i, pc, dispcnt);
@@ -64,6 +92,7 @@ fn test_compare_frame_60() {
         let ref_pixels = &ref_data[data_start..];
         
         let mut diff_count = 0;
+        let mut printed = 0;
         for i in 0..(240 * 160) {
             let r = fb[i * 4 + 0];
             let g = fb[i * 4 + 1];
@@ -74,6 +103,10 @@ fn test_compare_frame_60() {
             let ref_b = ref_pixels[i * 3 + 2];
             
             if r != ref_r || g != ref_g || b != ref_b {
+                if printed < 10 {
+                    println!("Diff at {}: Em=({},{},{}) Ref=({},{},{})", i, r, g, b, ref_r, ref_g, ref_b);
+                    printed += 1;
+                }
                 diff_count += 1;
             }
         }
