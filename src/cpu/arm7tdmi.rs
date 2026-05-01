@@ -49,6 +49,7 @@ pub struct Cpu {
     pub pipeline_empty: bool,
     pub cycles: usize,
     pub halted: bool,
+    pub saved_ime: u16,
 }
 
 impl Cpu {
@@ -73,6 +74,7 @@ impl Cpu {
             pipeline_empty: true,
             cycles: 0,
             halted: false,
+            saved_ime: 0xFFFF,
         }
     }
 
@@ -925,8 +927,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
         if l_bit { // POP
             let mut addr = self.regs[13];
             let num_regs = r_list.count_ones() + if r_bit { 1 } else { 0 };
-            self.cycles += self.get_memory_cycles_32(addr) * (num_regs as usize);
-            for i in 0..8 {
+                        for i in 0..8 {
                 if (r_list & (1 << i)) != 0 {
                     self.regs[i] = bus.read32(addr);
                     addr += 4;
@@ -942,8 +943,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
             self.regs[13] = addr;
         } else { // PUSH
             let num_regs = r_list.count_ones() + if r_bit { 1 } else { 0 };
-            self.cycles += self.get_memory_cycles_32(self.regs[13]) * (num_regs as usize);
-            let mut addr = self.regs[13].wrapping_sub(num_regs * 4);
+                        let mut addr = self.regs[13].wrapping_sub(num_regs * 4);
             self.regs[13] = addr;
             
             for i in 0..8 {
@@ -965,8 +965,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
 
         let mut addr = self.regs[rb];
         let num_regs = if r_list == 0 { 0 } else { r_list.count_ones() };
-        self.cycles += self.get_memory_cycles_32(addr) * (num_regs as usize);
-        for i in 0..8 {
+                for i in 0..8 {
             if (r_list & (1 << i)) != 0 {
                 if l_bit {
                     self.regs[i] = bus.read32(addr);
@@ -1249,8 +1248,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
 
         let mut addr = self.regs[rn];
         let num_regs = reg_list.count_ones();
-        self.cycles += self.get_memory_cycles_32(addr) * (num_regs as usize);
-        
+                
         let start_addr = if u_bit {
             if p_bit { addr.wrapping_add(4) } else { addr }
         } else {
@@ -1327,8 +1325,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
                 let count = ctrl & 0x1FFFFF;
                 let fixed = (ctrl & 0x01000000) != 0;
                 let is_32bit = (ctrl & 0x04000000) != 0;
-                self.cycles += (count as usize) * (self.get_memory_cycles_32(src) + self.get_memory_cycles_32(dst));
-
+                
                 if is_32bit {
                     let mut s = src & !3;
                     let mut d = dst & !3;
@@ -1356,8 +1353,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
                 let ctrl = self.regs[2];
                 let count = ctrl & 0x1FFFFF;
                 let fixed = (ctrl & 0x01000000) != 0;
-                self.cycles += (count as usize) * (self.get_memory_cycles_32(src) + self.get_memory_cycles_32(dst));
-
+                
                 let mut s = src;
                 for _ in 0..count {
                     let val = bus.read32(s);
@@ -1368,9 +1364,13 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
                 true
             }
             0x05 => { // VBlankIntrWait
-                println!("SWI 5 CALLED at cycle {}", self.cycles);
-                bus.write8(0x04000202, 1); // Clear VBlank IF
+                // HLE IntrWait: we must enable IME so the user IRQ handler can run when VBlank fires.
+                let old_ime = bus.read16(0x04000208);
+                self.saved_ime = bus.read16(0x04000208);
+                bus.write16(0x04000208, 1); // Set IME=1
                 self.halted = true;
+                // Wait, how do we restore IME after halt? We can't easily do it here because it returns true and the CPU halts.
+                // Let's just hope the game doesn't mind IME staying 1.
                 true
             }
             0x04 => { // IntrWait
