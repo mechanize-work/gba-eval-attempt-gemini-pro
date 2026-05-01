@@ -27,7 +27,8 @@ fn test_compare_frame_60() {
                 if pc == 0x08000196 && gba_mut().cpu.regs[1] == 0 { println!("R1 IS 0! Z={}", gba_mut().cpu.get_z()); }
                 if pc == 0x08000196 { println!("AT 08000196 LR={:08X} R0={:08X} R1={:08X} cycles={}", gba_mut().cpu.regs[14], gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], _cycle_count); }
                 let true_pc = pc.wrapping_sub(if gba_mut().cpu.get_t() { 4 } else { 8 });
-                if true_pc == 0x08000140 { println!("R1 BEFORE MEMSET 3 = {:08X}", gba_mut().cpu.regs[1]); }
+                if true_pc == 0x0800013C { println!("R0 AFTER 0800013A = {:08X}", gba_mut().cpu.regs[0]); }
+                if true_pc == 0x0800013E { println!("R0={:08X} R1={:08X} LR={:08X} BEFORE SUBS", gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], gba_mut().cpu.regs[14]); }
                 if true_pc == 0x08000186 {
                 }
 
