@@ -70,7 +70,7 @@ fn test_compare_frame_60() {
                     count_a += 1;
                 }
 
-                if cycle_count < 100 { println!("Trace: PC={:08X} I={:08X} R0={:08X} R1={:08X} LR={:08X}", gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }), 0, gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], gba_mut().cpu.regs[14]); }
+                if true_pc >= 0x08000220 && true_pc <= 0x08000240 { println!("Trace: PC={:08X} I={:08X} R0={:08X} R1={:08X} LR={:08X}", gba_mut().cpu.regs[15].wrapping_sub(if gba_mut().cpu.get_t() { 2 } else { 4 }), 0, gba_mut().cpu.regs[0], gba_mut().cpu.regs[1], gba_mut().cpu.regs[14]); }
 gba_mut().step(&mut dummy_fb); cycle_count += 1;
             }
             if true {

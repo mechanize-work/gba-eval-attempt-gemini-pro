@@ -345,7 +345,7 @@ impl Ppu {
                             let base_addr = 0x10000 + final_tile as u32 * 32;
                             if base_addr < 96 * 1024 {
                                 if color_mode_256 {
-                                    let addr = base_addr * 2 + (in_tile_y * 8 + in_tile_x) as u32;
+                                    let addr = base_addr + (in_tile_y * 8 + in_tile_x) as u32;
                                     if addr < 96 * 1024 {
                                         let color_idx = self.vram[addr as usize] as usize;
                                         if color_idx != 0 {
