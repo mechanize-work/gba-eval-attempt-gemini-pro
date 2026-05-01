@@ -142,7 +142,7 @@ impl Bus for Mmu {
             0x00 => if addr < 0x4000 { self.bios[addr as usize] } else { 0 },
             0x02 => self.ewram[(addr & 0x3FFFF) as usize],
             0x03 => self.iwram[(addr & 0x7FFF) as usize],
-            0x04 => {
+            0x04 => { if self.wait_states > 280896*50 { println!("IO READ {:08X}", addr); }
                 match addr & 0xFFFFFF {
                     
                     0x100 => { println!("TIMER 0 READ"); (self.timers[0].counter >> 16) as u8 },
@@ -209,7 +209,7 @@ impl Bus for Mmu {
         match addr >> 24 {
             0x02 => self.ewram[(addr & 0x3FFFF) as usize] = val,
             0x03 => self.iwram[(addr & 0x7FFF) as usize] = val,
-            0x04 => { if addr != 0x04000208 && addr != 0x04000209 && addr != 0x0400020A && addr != 0x0400020B { println!("IO Write {:08X}={:02X}", addr, val); } println!("IO Write {:08X}={:02X}", addr, val);
+            0x04 => { if self.wait_states > 280896*50 { println!("IO READ {:08X}", addr); } if addr != 0x04000208 && addr != 0x04000209 && addr != 0x0400020A && addr != 0x0400020B { println!("IO Write {:08X}={:02X}", addr, val); } println!("IO Write {:08X}={:02X}", addr, val);
                 match addr & 0xFFFFFF {
                     
                     0x100 => { self.timers[0].reload = (self.timers[0].reload & 0xFF00) | (val as u16); },

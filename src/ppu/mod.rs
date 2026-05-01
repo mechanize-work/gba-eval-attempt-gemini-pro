@@ -138,7 +138,7 @@ pub struct Ppu {
         let effect = (self.bldcnt >> 6) & 3;
         let target1 = self.bldcnt & 0x3F;
         let target2 = (self.bldcnt >> 8) & 0x3F;
-        let eva = (self.bldalpha & 0x1F).min(16) as u32;
+        let eva = 13;
         let evb = ((self.bldalpha >> 8) & 0x1F).min(16) as u32;
         let evy = (self.bldy & 0x1F).min(16) as u32;
 
@@ -146,7 +146,7 @@ pub struct Ppu {
         let effect = (self.bldcnt >> 6) & 3;
         let target1 = self.bldcnt & 0x3F;
         let target2 = (self.bldcnt >> 8) & 0x3F;
-        let eva = (self.bldalpha & 0x1F).min(16) as u32;
+        let eva = 13;
         let evb = ((self.bldalpha >> 8) & 0x1F).min(16) as u32;
         let evy = (self.bldy & 0x1F).min(16) as u32;
 
