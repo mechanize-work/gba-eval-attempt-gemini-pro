@@ -58,7 +58,7 @@ fn test_compare_frame_60() {
                     prev_pc_region = region;
                 }
                 
-                if cycle_count > 16853040 - 40 && cycle_count <= 16853040 + 20 {
+                if cycle_count < 300 {
                     let pc = gba_mut().cpu.regs[15];
                     let r0 = gba_mut().cpu.regs[0];
                     let r1 = gba_mut().cpu.regs[1];
