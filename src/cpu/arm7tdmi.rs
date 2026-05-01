@@ -300,7 +300,14 @@ impl Cpu {
         let instr = self.pipeline[0];
         self.pipeline[0] = self.pipeline[1];
 
-        self.cycles += 1;
+        let pc = self.regs[15].wrapping_sub(if self.get_t() { 2 } else { 4 });
+        let cycles = match pc >> 24 {
+            0x02 => if self.get_t() { 3 } else { 6 },
+            0x08 | 0x09 | 0x0A | 0x0B | 0x0C | 0x0D => if self.get_t() { 3 } else { 6 },
+            0x0E => 5,
+            _ => 1,
+        };
+        self.cycles += cycles;
 
         if self.get_t() {
             self.execute_thumb(instr as u16, bus);

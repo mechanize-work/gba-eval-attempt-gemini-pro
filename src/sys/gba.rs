@@ -24,8 +24,9 @@ impl Gba {
     }
 
     pub fn step(&mut self, framebuffer: &mut [u32; 240 * 160]) {
+        let start_cycles = self.cpu.cycles;
         self.cpu.step(&mut self.mmu);
-        let elapsed = 4;
+        let elapsed = self.cpu.cycles - start_cycles;
         self.cycles += elapsed;
 
         // PPU timings: 1 line = 1232 cycles (actually 960 active, 272 hblank)
