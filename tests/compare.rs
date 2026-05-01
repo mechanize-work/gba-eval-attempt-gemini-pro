@@ -14,6 +14,8 @@ fn test_compare_frame_60() {
         emu_load_rom(rom.len() as i32);
 
         let mut dummy_fb = [0u32; 240 * 160];
+        let mut count = 0;
+        let mut count = 0;
         let mut prev_pc_region = 0;
 
         for i in 0..60 {
@@ -52,8 +54,17 @@ fn test_compare_frame_60() {
                 if region != prev_pc_region {
                     let mode = gba_mut().cpu.get_mode() as u32;
                     let thumb = gba_mut().cpu.get_t();
-                    println!("Jumped to region {:02X}: PC={:08X} Mode={:02X} Thumb={}", region, pc, mode, thumb);
+                    
                     prev_pc_region = region;
+                }
+                
+                if count < 50 {
+                    let pc = gba_mut().cpu.regs[15];
+                    let r0 = gba_mut().cpu.regs[0];
+                    let r1 = gba_mut().cpu.regs[1];
+                    let t = gba_mut().cpu.get_t();
+                    println!("Trace: PC={:08X} T={} R0={:08X} R1={:08X}", pc, t, r0, r1);
+                    count += 1;
                 }
                 gba_mut().step(&mut dummy_fb);
             }
@@ -63,7 +74,9 @@ fn test_compare_frame_60() {
                 let bg2cnt = gba_mut().mmu.ppu.bg2cnt;
                 let pal0 = gba_mut().mmu.ppu.palette[0];
                 let pal1 = gba_mut().mmu.ppu.palette[1];
-                println!("Frame {}: PC: {:08X}, DISPCNT: {:04X}, BG2CNT: {:04X}, PAL0: {:02X}{:02X}", i, pc, dispcnt, bg2cnt, pal1, pal0);
+                let mut nonzero_vram = 0;
+                for b in gba_mut().mmu.ppu.vram.iter() { if *b != 0 { nonzero_vram += 1; } }
+                println!("Frame {}: PC: {:08X}, DISPCNT: {:04X}, BG2CNT: {:04X}, PAL0: {:02X}{:02X}, VRAM non-zero: {}", i, pc, dispcnt, bg2cnt, pal1, pal0, nonzero_vram);
             }
         }
         
