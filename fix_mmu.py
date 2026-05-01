@@ -3,6 +3,7 @@ import sys
 with open("src/memory/mmu.rs", "r") as f:
     src = f.read()
 
+# Add bios fix
 src = src.replace("bios: vec![0; 16 * 1024],", "bios: include_bytes!(\"../../spec/gba_bios_stub.bin\").to_vec(),")
 
 dma_struct = """

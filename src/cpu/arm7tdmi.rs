@@ -1133,7 +1133,7 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
             val
         };
 
-        let base = if rn == 15 { self.regs[15] } else { self.regs[rn] };
+        let base = if rn == 15 { self.regs[15].wrapping_add(4) } else { self.regs[rn] };
         
         let addr = if p_bit {
             if u_bit { base.wrapping_add(offset) } else { base.wrapping_sub(offset) }
