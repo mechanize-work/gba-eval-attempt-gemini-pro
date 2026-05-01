@@ -48,6 +48,7 @@ pub struct Cpu {
     pipeline: [u32; 2],
     pub pipeline_empty: bool,
     pub cycles: usize,
+    pub halted: bool,
 }
 
 impl Cpu {
@@ -71,6 +72,7 @@ impl Cpu {
             pipeline: [0; 2],
             pipeline_empty: true,
             cycles: 0,
+            halted: false,
         }
     }
 
@@ -286,6 +288,11 @@ impl Cpu {
     }
 
     pub fn step(&mut self, bus: &mut dyn Bus) {
+        if self.halted {
+            self.cycles += 1;
+            return;
+        }
+
         if self.pipeline_empty {
             self.fill_pipeline(bus);
         }
@@ -1297,11 +1304,15 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
                 true
             }
             0x05 => { // VBlankIntrWait
-                // HLE: just return for now. The game might run too fast, but it won't crash.
+                self.halted = true;
                 true
             }
             0x04 => { // IntrWait
-                // HLE: just return
+                self.halted = true;
+                true
+            }
+            0x02 => { // Halt
+                self.halted = true;
                 true
             }
             _ => false,

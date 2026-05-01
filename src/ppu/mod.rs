@@ -290,7 +290,7 @@ impl Ppu {
                 let size = (attr1 >> 14) & 3;
                 let color_mode_256 = (attr0 & 0x2000) != 0;
 
-                let tile_num = if color_mode_256 { attr2 & 0x3FE } else { attr2 & 0x3FF };
+                let tile_num = attr2 & 0x3FF;
                 let priority = ((attr2 >> 10) & 3) as u8;
                 let pal_bank = (attr2 >> 12) & 0xF;
 

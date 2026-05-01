@@ -24,9 +24,8 @@ impl Gba {
     }
 
     pub fn step(&mut self, framebuffer: &mut [u32; 240 * 160]) {
-        let start_cycles = self.cpu.cycles;
         self.cpu.step(&mut self.mmu);
-        let elapsed = self.cpu.cycles - start_cycles;
+        let elapsed = 4;
         self.cycles += elapsed;
 
         // PPU timings: 1 line = 1232 cycles (actually 960 active, 272 hblank)
@@ -69,20 +68,23 @@ impl Gba {
             }
 
             // check if IRQ should be processed
-            if self.mmu.ime != 0 && (self.mmu.ie & self.mmu.i_f) != 0 && (self.cpu.cpsr & 0x80) == 0 {
-                // Trigger IRQ exception
-                let old_cpsr = self.cpu.cpsr;
-                self.cpu.set_mode(crate::cpu::arm7tdmi::Mode::Irq);
-                self.cpu.spsr = old_cpsr;
-                self.cpu.regs[14] = if self.cpu.pipeline_empty {
-                    self.cpu.regs[15].wrapping_add(4)
-                } else {
-                    self.cpu.regs[15]
-                };
-                self.cpu.set_t(false);
-                self.cpu.set_i(true);
-                self.cpu.regs[15] = 0x00000018;
-                self.cpu.reload_pipeline();
+            if self.mmu.ime != 0 && (self.mmu.ie & self.mmu.i_f) != 0 {
+                self.cpu.halted = false;
+                if (self.cpu.cpsr & 0x80) == 0 {
+                    // Trigger IRQ exception
+                    let old_cpsr = self.cpu.cpsr;
+                    self.cpu.set_mode(crate::cpu::arm7tdmi::Mode::Irq);
+                    self.cpu.spsr = old_cpsr;
+                    self.cpu.regs[14] = if self.cpu.pipeline_empty {
+                        self.cpu.regs[15].wrapping_add(4)
+                    } else {
+                        self.cpu.regs[15]
+                    };
+                    self.cpu.set_t(false);
+                    self.cpu.set_i(true);
+                    self.cpu.regs[15] = 0x00000018;
+                    self.cpu.reload_pipeline();
+                }
             }
         }
     }
