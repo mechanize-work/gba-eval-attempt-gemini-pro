@@ -961,6 +961,8 @@ fn execute_thumb_mov_cmp_add_sub_imm(&mut self, instr: u16, bus: &mut dyn Bus) {
             addr = addr.wrapping_add(0x40);
         }
 
+        // STM/LDM writeback happens AFTER the instruction accesses memory.
+        // Writeback should ALWAYS happen if rb is not in the list.
         if !l_bit || (r_list & (1 << rb)) == 0 {
             self.regs[rb] = addr;
         }
